@@ -24,6 +24,8 @@ import "syscall"
 // Raise tries to maximize the file descriptor allowance of this process
 // to the maximum hard-limit allowed by the OS.
 // Returns the size it was set to (may differ from the desired 'max')
+//
+// node 启动时调用。抬到硬上限和 max 里较小的那个，抬不到硬上限以上。
 func Raise(max uint64) (uint64, error) {
 	// Get the current limit
 	var limit syscall.Rlimit

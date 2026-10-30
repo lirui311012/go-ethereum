@@ -57,6 +57,8 @@ var (
 // CompressBytes compresses the input byte slice according to the sparse bitset
 // representation algorithm. If the result is bigger than the original input, no
 // compression is done.
+//
+// 压出来不比原文短就原样返回。解压必须事先知道原始长度。
 func CompressBytes(data []byte) []byte {
 	if out := bitsetEncodeBytes(data); len(out) < len(data) {
 		return out

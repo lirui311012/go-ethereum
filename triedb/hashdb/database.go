@@ -77,6 +77,8 @@ var Defaults = &Config{
 // Database is an intermediate write layer between the trie data structures and
 // the disk database. The aim is to accumulate trie writes in-memory and only
 // periodically flush a couple tries to disk, garbage collecting the remainder.
+//
+// 节点 key 是 keccak(RLP)。Update 放进脏缓存，Commit 或 Cap 才写 KV。不再被引用的根靠 Dereference 回收。
 type Database struct {
 	diskdb  ethdb.Database              // Persistent storage for matured trie nodes
 	cleans  *fastcache.Cache            // GC friendly memory cache of clean node RLPs
@@ -534,6 +536,8 @@ func (c *cleaner) Delete(key []byte) error {
 
 // Update inserts the dirty nodes in provided nodeset into database and link the
 // account trie with multiple storage tries if necessary.
+//
+// 删除在这里丢掉。账户叶子里的存储根用来把存储 trie 挂到账户节点上。
 func (db *Database) Update(root common.Hash, parent common.Hash, block uint64, nodes *trienode.MergedNodeSet) error {
 	// Ensure the parent state is present and signal a warning if not.
 	if parent != types.EmptyRootHash {

@@ -15,6 +15,8 @@
 //
 // Internally the queue is based on the standard heap package working on a
 // sortable version of the block based stack.
+//
+// 下载器和同步用它按优先级排序。要最小优先，把优先级取负再 Push。
 package prque
 
 import (

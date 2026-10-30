@@ -95,6 +95,8 @@ var (
 //   - dynamic dials are created from node discovery results. The dialer
 //     continuously reads candidate nodes from its input iterator and attempts
 //     to create peer connections to nodes arriving through the iterator.
+//
+// 拨号本身不带区块。连上之后交给 setupFunc，也就是 Server.SetupConn。
 type dialScheduler struct {
 	dialConfig
 	setupFunc     dialSetupFunc

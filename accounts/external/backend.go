@@ -33,6 +33,8 @@ import (
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
+// ExternalBackend 把一个外部签名器包装成 Backend。
+// geth 配了它就不再加载本地 keystore、USB 和智能卡。
 type ExternalBackend struct {
 	signers []accounts.Wallet
 }
@@ -60,7 +62,10 @@ func (eb *ExternalBackend) Subscribe(sink chan<- accounts.WalletEvent) event.Sub
 
 // ExternalSigner provides an API to interact with an external signer (clef)
 // It proxies request to the external signer while forwarding relevant
-// request headers
+// request headers.
+//
+// 私钥不进本进程。签名是 RPC：account_signData 或 account_signTransaction。
+// 本树没有 cmd/clef，这里只是客户端。Open、Derive 都不支持。
 type ExternalSigner struct {
 	client   *rpc.Client
 	endpoint string
@@ -197,6 +202,8 @@ type signTransactionResult struct {
 // If chainID is nil, or tx.ChainID is zero, the chain ID will be assigned
 // by the external signer. For non-legacy transactions, the chain ID of the
 // transaction overrides the chainID parameter.
+//
+// 交易被收成 clef 的 SendTxArgs 送出去。返回的是对方签好的交易，本进程不碰私钥。
 func (api *ExternalSigner) SignTx(account accounts.Account, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
 	data := hexutil.Bytes(tx.Data())
 	var to *common.MixedcaseAddress

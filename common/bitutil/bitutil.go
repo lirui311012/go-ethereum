@@ -5,6 +5,8 @@
 // Adapted from: https://go.dev/src/crypto/subtle/xor_generic.go
 
 // Package bitutil implements fast bitwise operations.
+//
+// 字节切片的与、或、异或在这里。稀疏位图压缩在 compress.go，全零输入压成 nil。
 package bitutil
 
 import (

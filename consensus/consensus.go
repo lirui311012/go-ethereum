@@ -55,6 +55,9 @@ type ChainReader interface {
 }
 
 // Engine is an algorithm agnostic consensus engine.
+//
+// 合并之后执行层自己不封印区块。生产路径上 ethash 和 clique 的 Seal 会 panic。
+// 出块从 eth/catalyst 进入 miner。这里留下的是头校验和 Finalize。
 type Engine interface {
 	// Author retrieves the Ethereum address of the account that minted the given
 	// block, which may be different from the header's coinbase if a consensus

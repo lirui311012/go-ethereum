@@ -15,6 +15,9 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package rawdb contains a collection of low level database accessors.
+//
+// 键前缀和读写函数。热数据在 KV，远离头部的规范段在 freezer。
+// 账户和存储槽在 trie，不在这些区块表里。
 package rawdb
 
 import (

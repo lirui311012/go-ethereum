@@ -36,6 +36,8 @@ type node interface {
 }
 
 type (
+	// fullNode 有 16 个分支再加一个值槽。shortNode 压缩一段路径。
+	// 短于 32 字节的节点内嵌在父节点里，否则换成 hashNode。
 	fullNode struct {
 		Children [17]node // Actual trie node data to encode/decode (needs custom encoder)
 		flags    nodeFlag

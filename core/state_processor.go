@@ -65,6 +65,9 @@ func (p *StateProcessor) chainConfig() *params.ChainConfig {
 // Process returns the receipts and logs accumulated during the process and
 // returns the amount of gas that was used in the process. If any of the
 // transactions failed to execute due to insufficient gas it will return an error.
+//
+// 一块的执行顺序：系统调用（信标根、父块哈希）→ 逐笔交易 → 提款和执行请求 → Finalize。
+// 这里不把块写成链头。链头由 InsertChain 或 Engine API 的 SetCanonical 决定。
 func (p *StateProcessor) Process(ctx context.Context, block *types.Block, statedb *state.StateDB, jumpDestCache vm.JumpDestCache, precompileCache *vm.PrecompileCache, cfg vm.Config, execIndex *atomic.Int64) (*ProcessResult, error) {
 	if supportsParallelExecution(block, p.chainConfig(), statedb.Witness() != nil, cfg.Tracer != nil, cfg.DisableParallelExecution) {
 		return p.processParallel(ctx, block, statedb, jumpDestCache, precompileCache, cfg)
@@ -165,6 +168,8 @@ func (p *StateProcessor) Process(ctx context.Context, block *types.Block, stated
 }
 
 // PreExecution processes pre-execution state changes and system calls.
+//
+// 这些调用走 OnSystemCallStart，不走 OnTxStart。Cancun 写信标根，Prague 起写父块哈希。
 func PreExecution(ctx context.Context, beaconRoot *common.Hash, parent *types.Header, config *params.ChainConfig, evm *vm.EVM, number *big.Int, time uint64) *bal.ConstructionBlockAccessList {
 	_, _, spanEnd := telemetry.StartSpan(ctx, "core.preExecution")
 	defer spanEnd(nil)

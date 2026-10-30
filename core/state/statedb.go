@@ -776,6 +776,8 @@ func (s *StateDB) GetRefund() uint64 {
 // Finalise finalises the state by removing the destructed objects and clears
 // the journal as well as the refunds. Finalise, however, will not push any updates
 // into the tries just yet. Only IntermediateRoot or Commit will do that.
+//
+// 瞬态存储不在这里清。下一笔交易的 Prepare 会换成一张空表。
 func (s *StateDB) Finalise(rules params.Rules) *bal.ConstructionBlockAccessList {
 	if rules.IsAmsterdam {
 		return s.finaliseAmsterdam(rules)
@@ -926,6 +928,8 @@ func (s *StateDB) finaliseAmsterdam(rules params.Rules) *bal.ConstructionBlockAc
 // IntermediateRoot computes the current root hash of the state trie.
 // It is called in between transactions to get the root hash that
 // goes into transaction receipts.
+//
+// 先 Finalise，再把脏存储和账户写进 trie 并 Hash。这一步不把节点交给 triedb。
 func (s *StateDB) IntermediateRoot(rules params.Rules) common.Hash {
 	// Finalise all the dirty storage states and write them into the tries
 	s.Finalise(rules)
@@ -1461,6 +1465,8 @@ func (s *StateDB) commitAndFlush(rules params.Rules, block uint64, deriveCodeFie
 //
 // Whether empty accounts are deleted and whether storage wiping is permitted
 // both follow from the fork rules this state was created with.
+//
+// trie.Commit 只收集脏节点。随后 triedb.Update：hash 模式放进脏缓存，path 模式叠一层 diff。写 KV 还要再等 Cap、Commit 或 pathdb 的 buffer 刷出。
 func (s *StateDB) Commit(rules params.Rules, block uint64) (common.Hash, error) {
 	ret, err := s.commitAndFlush(rules, block, false)
 	if err != nil {
@@ -1492,6 +1498,8 @@ func (s *StateDB) CommitWithUpdate(rules params.Rules, block uint64) (common.Has
 // - Reset access list (Berlin)
 // - Add coinbase to access list (EIP-3651)
 // - Reset transient storage (EIP-1153)
+//
+// 每笔交易进入执行前调用。上一笔的 TSTORE 从这里消失。
 func (s *StateDB) Prepare(rules params.Rules, sender, coinbase common.Address, dst *common.Address, precompiles []common.Address, list types.AccessList) {
 	if rules.IsEIP2929 && rules.IsEIP4762 {
 		panic("eip2929 and eip4762 are both activated")

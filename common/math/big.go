@@ -37,6 +37,8 @@ const (
 )
 
 // HexOrDecimal256 marshals big.Int as hex or decimal.
+//
+// 配置文件里的大整数经常是这个类型。解析同时接受十进制和 0x，写出时是 0x。
 type HexOrDecimal256 big.Int
 
 // NewHexOrDecimal256 creates a new HexOrDecimal256
@@ -111,6 +113,8 @@ func (i *Decimal256) String() string {
 
 // ParseBig256 parses s as a 256 bit integer in decimal or hexadecimal syntax.
 // Leading zeros are accepted. The empty string parses as zero.
+//
+// 超过 256 位返回 false。空字符串当成 0，不是解析失败。
 func ParseBig256(s string) (*big.Int, bool) {
 	if s == "" {
 		return new(big.Int), true
@@ -145,6 +149,8 @@ func BigPow(a, b int64) *big.Int {
 
 // PaddedBigBytes encodes a big integer as a big-endian byte slice. The length
 // of the slice is at least n bytes.
+//
+// 大端，左边补零。keystore 加密私钥时用它把标量收成 32 字节。
 func PaddedBigBytes(bigint *big.Int, n int) []byte {
 	if bigint.BitLen()/8 >= n {
 		return bigint.Bytes()
@@ -168,6 +174,8 @@ func ReadBits(bigint *big.Int, buf []byte) {
 }
 
 // U256 encodes x as a 256 bit two's complement number. This operation is destructive.
+//
+// 就地与上 2^256-1，调用方原来的数会被改掉。负数也会被折进 256 位。
 func U256(x *big.Int) *big.Int {
 	return x.And(x, tt256m1)
 }

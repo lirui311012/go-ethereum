@@ -27,6 +27,8 @@ import (
 )
 
 // HistoryMode configures history pruning.
+//
+// 决定从哪一高度开始保留 body 和收据。不决定要不要执行，也不是第三种同步模式。
 type HistoryMode uint32
 
 const (

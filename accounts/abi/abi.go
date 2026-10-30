@@ -31,6 +31,9 @@ import (
 // The ABI holds information about a contract's context and available
 // invocable methods. It will allow you to type check function calls and
 // packs data accordingly.
+//
+// Methods 的键在重载时会变：第一个 foo 仍叫 foo，第二个变成 foo0。RawName 才是 JSON 里的原名。
+// 构造函数、fallback、receive 不在 Methods 里。
 type ABI struct {
 	Constructor Method
 	Methods     map[string]Method
@@ -60,6 +63,9 @@ func JSON(reader io.Reader) (ABI, error) {
 // of 4 bytes and arguments are all 32 bytes.
 // Method ids are created from the first 4 bytes of the hash of the
 // methods string signature. (signature = baz(uint32,string32))
+//
+// 返回值已经含 4 字节 ID。再手动加一次会多出 4 字节。
+// name 为空时打的是构造函数参数，没有选择器。
 func (abi ABI) Pack(name string, args ...interface{}) ([]byte, error) {
 	// Fetch the ABI of the requested method
 	if name == "" {
@@ -105,6 +111,8 @@ func (abi ABI) getArguments(name string, data []byte) (Arguments, error) {
 }
 
 // Unpack unpacks the output according to the abi specification.
+//
+// 按名字找方法的输出、事件的输入或错误的输入。解日志时用事件名，data 不含 topic。
 func (abi ABI) Unpack(name string, data []byte) ([]interface{}, error) {
 	args, err := abi.getArguments(name, data)
 	if err != nil {
@@ -138,6 +146,8 @@ func (abi ABI) UnpackIntoMap(v map[string]interface{}, name string, data []byte)
 }
 
 // UnmarshalJSON implements json.Unmarshaler interface.
+//
+// 重载名字在这里用 ResolveNameConflict 加上数字后缀。错误不能重载，所以直接用原名。
 func (abi *ABI) UnmarshalJSON(data []byte) error {
 	var fields []struct {
 		Type    string

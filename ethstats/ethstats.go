@@ -15,6 +15,9 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package ethstats implements the network stats reporting service.
+//
+// 把本节点的区块头、交易池和延迟推到外部监控站。不参与共识，也不写链数据。
+// cmd/utils.RegisterEthStatsService 调用 New，URL 形如 nodename:secret@host:port。
 package ethstats
 
 import (
@@ -81,6 +84,8 @@ type fullNodeBackend interface {
 
 // Service implements an Ethereum netstats reporting daemon that pushes local
 // chain statistics up to a monitoring server.
+//
+// 实现 node.Lifecycle。New 只注册，拨号在 Start 之后的 loop 里。
 type Service struct {
 	server  *p2p.Server // Peer-to-peer server to retrieve networking infos
 	backend backend
@@ -113,6 +118,8 @@ type Service struct {
 //     SetPingHandler concurrently.
 //
 // The Close and WriteControl methods can be called concurrently with all other methods.
+//
+// 读和写各有一把锁。多个读者互相排队，多个写者互相排队，一次读和一次写可以同时进行。
 type connWrapper struct {
 	conn *websocket.Conn
 
@@ -173,6 +180,8 @@ func parseEthstatsURL(url string) (parts []string, err error) {
 }
 
 // New returns a monitoring service ready for stats reporting.
+//
+// 解析 URL 后 RegisterLifecycle。真正连接监控站发生在节点 Start 调到 Service.Start 时。
 func New(node *node.Node, backend backend, engine consensus.Engine, url string) error {
 	parts, err := parseEthstatsURL(url)
 	if err != nil {
@@ -219,6 +228,8 @@ func (s *Service) Stop() error {
 
 // loop keeps trying to connect to the netstats server, reporting chain events
 // until termination.
+//
+// 断线后重连。chain head 来得太密时丢掉中间事件，避免把监控站打满。
 func (s *Service) loop(chainHeadCh chan core.ChainHeadEvent, txEventCh chan core.NewTxsEvent, newPayloadCh chan core.NewPayloadEvent) {
 	// Start a goroutine that exhausts the subscriptions to avoid events piling up
 	var (
@@ -483,6 +494,8 @@ type authMsg struct {
 }
 
 // login tries to authorize the client at the remote server.
+//
+// 发出 hello，等对端回 ready。密码是 URL 里的 secret，不走以太坊账户。
 func (s *Service) login(conn *connWrapper) error {
 	// Construct and send the login authentication
 	infos := s.server.NodeInfo()

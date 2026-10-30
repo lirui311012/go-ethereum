@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
+// 共识层交给执行层的载荷类型在这里。JSON-RPC 方法在 eth/catalyst。块头规则在 consensus/beacon。
 package engine
 
 import (
@@ -34,6 +35,10 @@ import (
 
 // PayloadVersion denotes the version of PayloadAttributes used to request the
 // building of the payload to commence.
+//
+// 这是 PayloadID 的第一个字节，不是 RPC 方法的版本号。
+// V1 是 Paris，V2 是 Shanghai（提款），V3 是 Cancun（blob gas），V4 是 Amsterdam（slot 和区块访问列表）。
+// GetPayloadV3、V4、V5 都要求 PayloadV3。GetPayloadV6 才要求 PayloadV4。
 type PayloadVersion byte
 
 var (
@@ -67,6 +72,9 @@ var (
 
 // PayloadAttributes describes the environment context in which a block should
 // be built.
+//
+// 组下一块时的环境，还不是块。时间戳、prevRandao、建议的手续费接收地址，
+// 以及按分叉出现的提款、parentBeaconBlockRoot、slot、目标 gas limit。
 type PayloadAttributes struct {
 	Timestamp             uint64              `json:"timestamp"             gencodec:"required"`
 	Random                common.Hash         `json:"prevRandao"            gencodec:"required"`
@@ -87,6 +95,8 @@ type payloadAttributesMarshaling struct {
 //go:generate go run github.com/fjl/gencodec -type ExecutableData -field-override executableDataMarshaling -out ed_codec.go
 
 // ExecutableData is the data necessary to execute an EL payload.
+//
+// 已经组好、可以执行的块。交易是二进制。ExecutableDataToBlock 把它变成 types.Block 并核对区块哈希。
 type ExecutableData struct {
 	ParentHash      common.Hash         `json:"parentHash"    gencodec:"required"`
 	FeeRecipient    common.Address      `json:"feeRecipient"  gencodec:"required"`
@@ -135,6 +145,8 @@ type StatelessPayloadStatusV1 struct {
 
 //go:generate go run github.com/fjl/gencodec -enc=false -type ExecutionPayloadEnvelope -field-override executionPayloadEnvelopeMarshaling -out epe_decode.go
 
+// ExecutionPayloadEnvelope 是 getPayload 的返回：载荷、总手续费、blobs、execution requests。
+// 具体哪一版 RPC 方法在 eth/catalyst 里分发。本结构不自己执行块。
 type ExecutionPayloadEnvelope struct {
 	ExecutionPayload *ExecutableData `json:"executionPayload"  gencodec:"required"`
 	BlockValue       *big.Int        `json:"blockValue"  gencodec:"required"`
@@ -197,7 +209,10 @@ type TransitionConfigurationV1 struct {
 	TerminalBlockNumber     hexutil.Uint64 `json:"terminalBlockNumber"`
 }
 
-// PayloadID is an identifier of the payload build process
+// PayloadID is an identifier of the payload build process.
+//
+// 8 字节。第一个字节是 PayloadVersion，其余由 miner 填。
+// forkchoiceUpdated 把它交回共识层，getPayload 再拿它取块。
 type PayloadID [8]byte
 
 // Version returns the payload version associated with the identifier.
@@ -231,6 +246,8 @@ type ForkChoiceResponse struct {
 	PayloadID     *PayloadID      `json:"payloadId"`
 }
 
+// ForkchoiceStateV1 的三个哈希是链头、安全点和最终点。共识层用它告诉执行层当前该跟哪一块。
+// blsync 没有单独的安全点时，把 safe 和 finalized 都填成同一个最终头。
 type ForkchoiceStateV1 struct {
 	HeadBlockHash      common.Hash `json:"headBlockHash"`
 	SafeBlockHash      common.Hash `json:"safeBlockHash"`
@@ -268,6 +285,9 @@ func DecodeTransactions(enc [][]byte) ([]*types.Transaction, error) {
 // and that the blockhash of the constructed block matches the parameters. Nil
 // Withdrawals value will propagate through the returned block. Empty
 // Withdrawals value must be passed via non-nil, length 0 value in data.
+//
+// 组装 types.Block 后核对区块哈希。哈希对不上就拒绝，不写链头。
+// 难度固定为 0，没有叔块。提款为 nil 和空切片不是一回事。
 func ExecutableDataToBlock(data ExecutableData, versionedHashes []common.Hash, beaconRoot *common.Hash, requests [][]byte) (*types.Block, error) {
 	block, err := executableDataToBlock(data, versionedHashes, beaconRoot, requests)
 	if err != nil {
@@ -403,6 +423,8 @@ func attachAccessList(block *types.Block, data ExecutableData) (*types.Block, er
 
 // BlockToExecutableData constructs the ExecutableData structure by filling the
 // fields from the given block. It assumes the given block is post-merge block.
+//
+// 相反方向：执行层的块收成 getPayload 的信封，附上手续费、blob sidecar 和 execution requests。
 func BlockToExecutableData(block *types.Block, fees *big.Int, sidecars []*types.BlobTxSidecar, requests [][]byte) *ExecutionPayloadEnvelope {
 	data := &ExecutableData{
 		BlockHash:     block.Hash(),

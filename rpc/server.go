@@ -45,6 +45,9 @@ const (
 )
 
 // Server is an RPC server.
+//
+// 方法表在这里。eth_* 的业务在 internal/ethapi，engine_* 在 eth/catalyst。
+// HTTP 走 serveSingleRequest。IPC 和 WebSocket 走 ServeCodec。
 type Server struct {
 	services serviceRegistry
 	idgen    func() ID
@@ -105,6 +108,9 @@ func (s *Server) SetWebsocketReadLimit(limit int64) {
 // methods on the given receiver match the criteria to be either an RPC method or a
 // subscription an error is returned. Otherwise a new service is created and added to the
 // service collection this server provides to clients.
+//
+// 同一名字再注册会并进同一张表，同名方法被后注册的盖掉。
+// 进了注册表不等于能从公开 HTTP 调到，还要过 node 的模块白名单。
 func (s *Server) RegisterName(name string, receiver interface{}) error {
 	return s.services.registerName(name, receiver)
 }
@@ -162,6 +168,9 @@ func (s *Server) untrackCodec(codec ServerCodec) {
 // serveSingleRequest reads and processes a single RPC request from the given codec. This
 // is used to serve HTTP connections. Subscriptions and reverse calls are not allowed in
 // this mode.
+//
+// HTTP 专用。allowSubscribe 关掉，所以 eth_subscribe 在这条路径上会失败。
+// 单条走 handleMsg，数组走 handleBatch。
 func (s *Server) serveSingleRequest(ctx context.Context, codec ServerCodec) {
 	// Don't serve if server is stopped.
 	if !s.run.Load() {

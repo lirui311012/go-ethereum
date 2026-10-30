@@ -370,6 +370,8 @@ func (t *httpServerConn) RemoteAddr() string {
 func (t *httpServerConn) SetWriteDeadline(time.Time) error { return nil }
 
 // ServeHTTP serves JSON-RPC requests over HTTP.
+//
+// 校验方法和 Content-Type 之后只处理这一次请求，然后交给 serveSingleRequest。
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Permit dumb empty requests for remote health-checks (AWS)
 	if r.Method == http.MethodGet && r.ContentLength == 0 && r.URL.RawQuery == "" {

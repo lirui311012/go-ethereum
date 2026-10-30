@@ -62,6 +62,9 @@ func (err *AmbiguousAddrError) Error() string {
 }
 
 // accountCache is a live index of all accounts in the keystore.
+//
+// 文件系统通知不可用时，至少隔 minReloadInterval 才扫一次目录。
+// 同一地址有多份文件时 find 返回 AmbiguousAddrError，必须带上 URL 才能定位。
 type accountCache struct {
 	keydir   string
 	watcher  *watcher

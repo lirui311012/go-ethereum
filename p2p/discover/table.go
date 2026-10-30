@@ -63,6 +63,8 @@ const (
 // Table is the 'node table', a Kademlia-like index of neighbor nodes. The table keeps
 // itself up-to-date by verifying the liveness of neighbors and requesting their node
 // records when announcements of a new record version are received.
+//
+// 每个桶 16 个节点，并发查找 α=3。这里只有邻居节点，没有区块。
 type Table struct {
 	mutex        sync.Mutex        // protects buckets, bucket content, nursery, rand
 	buckets      [nBuckets]*bucket // index of known nodes by distance

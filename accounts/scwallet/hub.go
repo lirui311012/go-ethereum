@@ -68,6 +68,8 @@ type smartcardPairing struct {
 }
 
 // Hub is a accounts.Backend that can find and handle generic PC/SC hardware wallets.
+//
+// 通过 PC/SC 找卡。配对信息写在 datadir，下次插入不必重新输入 PUK。签名同样在卡上完成。
 type Hub struct {
 	scheme string // Protocol scheme prefixing account and wallet URLs.
 

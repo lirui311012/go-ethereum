@@ -73,6 +73,8 @@ func (ethash *Ethash) Close() error {
 // Seal generates a new sealing request for the given input block and pushes
 // the result into the given channel. For the ethash engine, this method will
 // just panic as sealing is not supported anymore.
+//
+// 主网不再 PoW 挖矿。beacon 在预合并头上若调到这里会 panic。
 func (ethash *Ethash) Seal(chain consensus.ChainHeaderReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error {
 	panic("ethash (pow) sealing not supported any more")
 }

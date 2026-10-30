@@ -38,6 +38,8 @@ const (
 	version = 3
 )
 
+// Key 是内存里的明文私钥。写盘时由 passphrase 包收成 Web3 Secret Storage JSON。
+// Address 从公钥推出，文件名里也带这个地址。
 type Key struct {
 	Id uuid.UUID // Version 4 "random" for unique id not derived from key data
 	// to simplify lookups we also store the address

@@ -26,6 +26,8 @@ import (
 
 // Argument holds the name of the argument and the corresponding type.
 // Types are used when packing and testing arguments.
+//
+// Indexed 只对事件有意义。为 true 时该参数进 topic，不进 log data。
 type Argument struct {
 	Name    string
 	Type    Type
@@ -226,6 +228,9 @@ func (arguments Arguments) PackValues(args []any) ([]byte, error) {
 }
 
 // Pack performs the operation Go format -> Hexdata.
+//
+// 这里不含 4 字节选择器。ABI.Pack 才把 Method.ID 拼到前面。
+// 动态参数先写偏移，variableInput 收在整段末尾。
 func (arguments Arguments) Pack(args ...any) ([]byte, error) {
 	// Make sure arguments match up and pack them
 	abiArgs := arguments

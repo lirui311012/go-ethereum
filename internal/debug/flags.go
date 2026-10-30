@@ -180,6 +180,8 @@ func init() {
 
 // Setup initializes profiling and logging based on the CLI flags.
 // It should be called as early as possible in the program.
+//
+// geth 启动早期调用。--verbosity、--vmodule 和 pprof 地址在这里生效。
 func Setup(ctx *cli.Context) error {
 	var (
 		handler        slog.Handler

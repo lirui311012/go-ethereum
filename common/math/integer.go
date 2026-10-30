@@ -81,6 +81,8 @@ func SafeSub(x, y uint64) (uint64, bool) {
 }
 
 // SafeAdd returns x+y and checks for overflow.
+//
+// 第二个返回值是 true 表示溢出。SafeSub、SafeMul 同样：true 表示结果装不进 uint64。
 func SafeAdd(x, y uint64) (uint64, bool) {
 	sum, carryOut := bits.Add64(x, y, 0)
 	return sum, carryOut != 0

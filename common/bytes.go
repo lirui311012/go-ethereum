@@ -15,6 +15,8 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package common contains various helper functions.
+//
+// 全仓库共用的值类型在这里。哈希运算在 crypto，区块和交易的二进制在 rlp。
 package common
 
 import (
@@ -26,6 +28,8 @@ import (
 
 // FromHex returns the bytes represented by the hexadecimal string s.
 // s may be prefixed with "0x".
+//
+// 没有 0x 也能解。奇数长度会在前面补一个 0。hexutil.Decode 则要求 0x，奇数长度直接报错。
 func FromHex(s string) []byte {
 	if has0xPrefix(s) {
 		s = s[2:]
@@ -117,6 +121,8 @@ func RightPadBytes(slice []byte, l int) []byte {
 }
 
 // LeftPadBytes zero-pads slice to the left up to length l.
+//
+// ABI 和 EVM 的数值字用它：内容靠右，左边补零。RightPadBytes 把内容靠左，bytes 和 string 的尾部用。
 func LeftPadBytes(slice []byte, l int) []byte {
 	if l <= len(slice) {
 		return slice

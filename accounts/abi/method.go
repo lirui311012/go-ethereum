@@ -91,6 +91,10 @@ type Method struct {
 // A method should always be created using NewMethod.
 // It also precomputes the sig representation and the string representation
 // of the method.
+//
+// 只有普通函数算 Sig 和 ID：keccak256("transfer(address,uint256)") 的前 4 字节。
+// 签名里的类型名沿用 Type.String()，也就是 JSON 里的字符串。不带位宽的 int / uint 在 NewType 里直接报错，不会改写成 int256。
+// 构造函数、fallback、receive 的 ID 是空的。
 func NewMethod(name string, rawName string, funType FunctionType, mutability string, isConst, isPayable bool, inputs Arguments, outputs Arguments) Method {
 	var (
 		types       = make([]string, len(inputs))

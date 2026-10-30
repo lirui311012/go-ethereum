@@ -33,6 +33,8 @@ import (
 
 // bridge is a collection of JavaScript utility methods to bride the .js runtime
 // environment and the Go RPC connection backing the remote method calls.
+//
+// JS 里的调用经这里发到 rpc.Client。personal 开头的输入不写入命令历史。
 type bridge struct {
 	client   *rpc.Client         // RPC client to execute Ethereum requests through
 	prompter prompt.UserPrompter // Input prompter to allow interactive user feedback

@@ -27,6 +27,9 @@ import (
 // Event is an event potentially triggered by the EVM's LOG mechanism. The Event
 // holds type information (inputs) about the yielded output. Anonymous events
 // don't get the signature canonical representation as the first LOG topic.
+//
+// ID 始终是事件签名的 keccak。只有非 anonymous 事件才把它放在 topic0。
+// 非 indexed 的数据用 Inputs 里未标记 indexed 的那些参数去 Unpack。
 type Event struct {
 	// Name is the event name used for internal representation. It's derived from
 	// the raw name and a suffix will be added in the case of event overloading.

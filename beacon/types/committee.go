@@ -141,6 +141,8 @@ func (s *SerializedSyncCommittee) Deserialize() (*SyncCommittee, error) {
 //
 // See data structure definition here:
 // https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/beacon-chain.md#syncaggregate
+//
+// 512 个公钥。VerifySignature 只聚合 Signers 位图里置位的那些密钥。
 type SyncCommittee struct {
 	keys      [params.SyncCommitteeSize]*bls.Pubkey
 	aggregate *bls.Pubkey

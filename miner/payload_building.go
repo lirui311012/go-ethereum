@@ -174,6 +174,8 @@ func (payload *Payload) FullBlockAndReceipts() (*types.Block, []*types.Receipt, 
 
 // Resolve returns the latest built payload and also terminates the background
 // thread for updating payload. It's safe to be called multiple times.
+//
+// 关掉 stop，buildPayload 的后台循环就此停住。full 已经造好就交 full，否则交一开始那块空块。
 func (payload *Payload) Resolve() *engine.ExecutionPayloadEnvelope {
 	payload.lock.Lock()
 	defer payload.lock.Unlock()
@@ -262,6 +264,8 @@ func (miner *Miner) runBuildIteration(ctx context.Context, start time.Time, iter
 }
 
 // buildPayload builds the payload according to the provided parameters.
+// 先同步造一块不含交易的空块，保证这个槽有东西可交。
+// 返回后后台按 Recommit 反复装交易，手续费更高才替换。12 秒或 Resolve 关掉 stop 时停。
 func (miner *Miner) buildPayload(ctx context.Context, args *BuildPayloadArgs, witness bool) (result *Payload, err error) {
 	payloadID := args.Id()
 	ctx, _, spanEnd := telemetry.StartSpan(ctx, "miner.buildPayload",

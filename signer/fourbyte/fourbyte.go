@@ -15,6 +15,9 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package fourbyte contains the 4byte database.
+//
+// 4 字节是函数签名 keccak 的前 4 字节，和 accounts/abi 的 Method.ID 是同一种算法。
+// 本树没有 cmd/clef。这里只把 calldata 映回函数签名，不执行交易。
 package fourbyte
 
 import (
@@ -30,6 +33,8 @@ var embeddedJSON []byte
 
 // Database is a 4byte database with the possibility of maintaining an immutable
 // set (embedded) into the process and a mutable set (loaded and written to file).
+//
+// New 载入嵌入表。NewFromFile 只读文件，不载入嵌入表。NewWithFile 两者都载入。
 type Database struct {
 	embedded   map[string]string
 	custom     map[string]string
@@ -45,6 +50,8 @@ func newEmpty() *Database {
 }
 
 // New loads the standard signature database embedded in the package.
+//
+// 等价于 NewWithFile("")。自定义项只留在内存。
 func New() (*Database, error) {
 	return NewWithFile("")
 }
@@ -72,6 +79,8 @@ func NewFromFile(path string) (*Database, error) {
 // NewWithFile loads both the standard signature database (embedded resource
 // file) as well as a custom database. The latter will be used to write new
 // values into if they are submitted via the API.
+//
+// path 为空时自定义项只留在内存。文件不存在会在第一次写入时创建。
 func NewWithFile(path string) (*Database, error) {
 	db := &Database{make(map[string]string), make(map[string]string), path}
 	db.customPath = path
@@ -100,6 +109,8 @@ func (db *Database) Size() (int, int) {
 // Selector checks the given 4byte ID against the known ABI methods.
 //
 // This method does not validate the match, it's assumed the caller will do.
+//
+// 先查嵌入表，再查自定义表。找不到就报错。这里不检查参数是否按 32 字节对齐。
 func (db *Database) Selector(id []byte) (string, error) {
 	if len(id) < 4 {
 		return "", fmt.Errorf("expected 4-byte id, got %d", len(id))

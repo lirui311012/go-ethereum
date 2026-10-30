@@ -15,6 +15,8 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package memorydb implements the key-value database layer based on memory maps.
+//
+// 测试和 --dev 无 datadir 时使用。进程退出后数据消失。
 package memorydb
 
 import (
@@ -41,6 +43,8 @@ var (
 // Database is an ephemeral key-value store. Apart from basic data storage
 // functionality it also supports batch writes and iterating over the keyspace in
 // binary-alphabetical order.
+//
+// 数据在进程内的 map 里。--dev 不写 datadir，以及大量测试，走这个实现。
 type Database struct {
 	db   map[string][]byte
 	lock sync.RWMutex

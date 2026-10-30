@@ -41,6 +41,9 @@ const syncCommitteeDomain = 7
 var knownForks = []string{"GENESIS", "ALTAIR", "BELLATRIX", "CAPELLA", "DENEB", "ELECTRA", "FULU"}
 
 // ClientConfig contains beacon light client configuration.
+//
+// Apis 是信标节点的轻客户端 HTTP 地址。Threshold 是接受一笔更新所需的最少签名人数。
+// 全节点日常不读这份配置，外部共识客户端直接调 eth/catalyst。
 type ClientConfig struct {
 	ChainConfig
 	Apis         []string

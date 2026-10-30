@@ -107,6 +107,7 @@ type ethstatsConfig struct {
 	URL string `toml:",omitempty"`
 }
 
+// gethConfig 是进程这一份配置的根。TOML 的键名与字段名一致，不转成小写。
 type gethConfig struct {
 	Eth      ethconfig.Config
 	Node     node.Config
@@ -142,6 +143,9 @@ func defaultNodeConfig() node.Config {
 
 // loadBaseConfig loads the gethConfig based on the given command line
 // parameters and config file.
+//
+// 顺序是代码默认值，然后 --config 的 TOML，然后显式写在命令行上的节点 flag。
+// 协议侧的 flag 要等账户后端装好，在 makeConfigNode 里才写入。
 func loadBaseConfig(ctx *cli.Context) gethConfig {
 	// Load defaults.
 	cfg := gethConfig{
@@ -163,6 +167,8 @@ func loadBaseConfig(ctx *cli.Context) gethConfig {
 }
 
 // makeConfigNode loads geth configuration and creates a blank node instance.
+//
+// node.New 会锁住数据目录。账户后端必须先装上，再 SetEthConfig：--dev 要在这里解锁开发账户。
 func makeConfigNode(ctx *cli.Context) (*node.Node, gethConfig) {
 	cfg := loadBaseConfig(ctx)
 	stack, err := node.New(&cfg.Node)
@@ -254,7 +260,8 @@ func makeFullNode(ctx *cli.Context) *node.Node {
 		utils.Fatalf("failed to setup OpenTelemetry: %v", err)
 	}
 
-	// Add Ethereum service.
+	// 在这里调用 eth.New：数据库、区块链、交易池都建好，并注册成协议、API 和 Lifecycle。
+	// 此时尚未 Start，发现和同步循环还没跑。
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)
 
 	// Create gauge with geth system and build information
@@ -296,6 +303,11 @@ func makeFullNode(ctx *cli.Context) *node.Node {
 	}
 	utils.RegisterSyncOverrideService(stack, eth, syncConfig)
 
+	// 共识三选一，且都必须发生在 stack.Start 之前。
+	// --dev：进程内模拟信标，自己按周期出块。
+	// --beacon.api：blsync 轻客户端，经进程内 engine API 把信标头送进来。
+	// 否则 catalyst.Register 挂上要 JWT 的 engine，并额外注册未认证的 testing。
+	// 这条路径不注册 Lifecycle，节点不会自己按槽出块，等外部共识客户端调用。
 	if ctx.Bool(utils.DeveloperFlag.Name) {
 		// Start dev mode.
 		simBeacon, err := catalyst.NewSimulatedBeacon(ctx.Uint64(utils.DeveloperPeriodFlag.Name), cfg.Eth.Miner.PendingFeeRecipient, eth)
@@ -331,6 +343,8 @@ func dumpConfig(ctx *cli.Context) error {
 	_, cfg := makeConfigNode(ctx)
 	comment := ""
 
+	// 只是不把创世块写进这份 TOML。磁盘上的创世数据不动。
+	// makeConfigNode 已经 node.New，所以本命令会占用数据目录锁，但不启动网络。
 	if cfg.Eth.Genesis != nil {
 		cfg.Eth.Genesis = nil
 		comment += "# Note: this config doesn't contain the genesis block.\n\n"
@@ -440,6 +454,7 @@ func setAccountManagerBackends(conf *node.Config, am *accounts.Manager, keydir s
 		}
 	}
 
+	// 外部签名器和本地 keystore 二选一。同时挂上会让同一账户出现两次。
 	// For now, we're using EITHER external signer OR local signers.
 	// If/when we implement some form of lockfile for USB and keystore wallets,
 	// we can have both, but it's very confusing for the user to see the same

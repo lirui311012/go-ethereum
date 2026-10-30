@@ -31,6 +31,8 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
+// Client 在没有完整共识客户端时自己跟信标头，再对本机 Engine API 送执行载荷。
+// 日常全节点由外部共识客户端直接调 eth/catalyst，不经过这里。入口命令是 cmd/blsync。
 type Client struct {
 	urls         []string
 	customHeader map[string]string
@@ -43,6 +45,7 @@ type Client struct {
 	engineClient *engineClient
 }
 
+// NewClient 在内存库上建 CommitteeChain 和 HeadTracker。委员会和头的数据不进执行层的链数据库。
 func NewClient(config params.ClientConfig) *Client {
 	// create data structures
 	var (

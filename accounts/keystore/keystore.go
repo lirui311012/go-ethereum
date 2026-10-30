@@ -18,6 +18,8 @@
 //
 // Keys are stored as encrypted JSON files according to the Web3 Secret Storage specification.
 // See https://ethereum.org/en/developers/docs/data-structures-and-encoding/web3-secret-storage/ for more information.
+//
+// 磁盘上是加密 JSON。明文私钥只在 Unlock 之后放进内存的 unlocked，或在 WithPassphrase 里用完即清。
 package keystore
 
 import (
@@ -59,6 +61,9 @@ const KeyStoreScheme = "keystore"
 const walletRefreshCycle = 3 * time.Second
 
 // KeyStore manages a key storage directory on disk.
+//
+// 一个账户文件对应一个 keystoreWallet。unlocked 是已解密私钥，按地址索引。
+// 目录一般是 DataDir/keystore，同一数据目录的多个进程共享这些文件。
 type KeyStore struct {
 	storage  keyStore                     // Storage backend, might be cleartext or encrypted
 	cache    *accountCache                // In-memory account cache over the filesystem storage
@@ -255,6 +260,8 @@ func (ks *KeyStore) Delete(a accounts.Account, passphrase string) error {
 
 // SignHash calculates a ECDSA signature for the given hash. The produced
 // signature is in the [R || S || V] format where V is 0 or 1.
+//
+// 只查内存里的 unlocked。没解锁就返回 ErrLocked，不会去读磁盘。
 func (ks *KeyStore) SignHash(a accounts.Account, hash []byte) ([]byte, error) {
 	// Look up the key to sign with and abort if it cannot be found
 	ks.mu.RLock()
@@ -269,6 +276,8 @@ func (ks *KeyStore) SignHash(a accounts.Account, hash []byte) ([]byte, error) {
 }
 
 // SignTx signs the given transaction with the requested account.
+//
+// 同样要求账户已经解锁。chainID 决定用哪套签名器，签名本身在 crypto.Sign。
 func (ks *KeyStore) SignTx(a accounts.Account, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
 	// Look up the key to sign with and abort if it cannot be found
 	ks.mu.RLock()
@@ -297,6 +306,8 @@ func (ks *KeyStore) SignHashWithPassphrase(a accounts.Account, passphrase string
 
 // SignTxWithPassphrase signs the transaction if the private key matching the
 // given address can be decrypted with the given passphrase.
+//
+// 当场解密、签完 zeroKey。不写入 unlocked，所以不依赖事先 Unlock。
 func (ks *KeyStore) SignTxWithPassphrase(a accounts.Account, passphrase string, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
 	_, key, err := ks.getDecryptedKey(a, passphrase)
 	if err != nil {
@@ -331,6 +342,9 @@ func (ks *KeyStore) Lock(addr common.Address) error {
 // If the account address is already unlocked for a duration, TimedUnlock extends or
 // shortens the active unlock timeout. If the address was previously unlocked
 // indefinitely the timeout is not altered.
+//
+// timeout 为 0 时不设 abort，一直留到进程退出或 Lock。
+// 已经无限解锁的地址再 TimedUnlock 不会改成有限期。到期由 expire 清掉并擦除私钥。
 func (ks *KeyStore) TimedUnlock(a accounts.Account, passphrase string, timeout time.Duration) error {
 	a, key, err := ks.getDecryptedKey(a, passphrase)
 	if err != nil {

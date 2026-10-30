@@ -31,6 +31,8 @@ import (
 // perform the action that is supposed to time out. Ensure that the timer you want to test
 // is created. Then run the clock until after the timeout. Finally observe the effect of
 // the timeout using a channel or semaphore.
+//
+// 虚拟时间不会自己走。测试要先造出定时器，再 Run 把时钟拨过超时点。
 type Simulated struct {
 	now       AbsTime
 	scheduled simTimerHeap

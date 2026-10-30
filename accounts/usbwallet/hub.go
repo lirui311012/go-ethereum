@@ -52,6 +52,8 @@ const (
 )
 
 // Hub is a accounts.Backend that can find and handle generic USB hardware wallets.
+//
+// 签名发生在设备上，没有 keystore 那种 Unlock。Ledger 和 Trezor 各建一个 Hub，靠 USB vendor/product 发现。
 type Hub struct {
 	scheme     string                  // Protocol scheme prefixing account and wallet URLs.
 	vendorID   uint16                  // USB vendor identifier used for device discovery

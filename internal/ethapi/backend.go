@@ -15,6 +15,8 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package ethapi implements the general Ethereum API functions.
+//
+// eth_* 和 txpool_* 的实现。通过 Backend 回到全节点，全节点一侧是 eth.EthAPIBackend。
 package ethapi
 
 import (
@@ -39,6 +41,8 @@ import (
 
 // Backend interface provides the common API services (that are provided by
 // both full and light clients) with access to necessary functions.
+//
+// 测试可以换成假实现。SendTx、StateAndHeaderByNumberOrHash、GetEVM 是 eth_call 和发交易的回头路。
 type Backend interface {
 	// General Ethereum API
 	SyncProgress(ctx context.Context) ethereum.SyncProgress
@@ -105,6 +109,9 @@ type Backend interface {
 	NewMatcherBackend() filtermaps.MatcherBackend
 }
 
+// GetAPIs registers the eth, txpool and debug services backed by apiBackend.
+//
+// 过滤器、miner、admin、engine 在 eth.APIs 和 catalyst.Register 另挂。公开到 HTTP 还要看 --http.api。
 func GetAPIs(apiBackend Backend) []rpc.API {
 	nonceLock := new(AddrLocker)
 	return []rpc.API{

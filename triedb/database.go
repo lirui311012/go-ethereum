@@ -95,6 +95,9 @@ type Database struct {
 
 // NewDatabase initializes the trie database with default settings, note
 // the legacy hash-based scheme is used by default.
+//
+// config 为 nil 时用 hashdb。PathDB 非空才走 pathdb。两种不能同时配。
+// 空数据目录在更外层会显式传入 PathDB，所以新节点默认是 path 方案。已经建好的库不能中途换。
 func NewDatabase(diskdb ethdb.Database, config *Config) *Database {
 	// Sanitize the config and use the default one if it's not specified.
 	if config == nil {
@@ -158,6 +161,8 @@ func (db *Database) HistoricNodeReader(root common.Hash) (*pathdb.HistoricalNode
 //
 // The passed in maps(nodes, states) will be retained to avoid copying everything.
 // Therefore, these maps must not be changed afterwards.
+//
+// hashdb 把节点放进脏缓存，删除在这里丢掉。pathdb 按路径叠 diff layer，并保留扁平状态。
 func (db *Database) Update(root common.Hash, parent common.Hash, block uint64, nodes *trienode.MergedNodeSet, states *StateSet) error {
 	if db.preimages != nil {
 		db.preimages.commit(false)

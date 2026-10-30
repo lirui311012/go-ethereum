@@ -55,6 +55,9 @@ var (
 // The beacon here is a half-functional consensus engine with partial functions which
 // is only used for necessary consensus checks. The legacy consensus engine can be any
 // engine implements the consensus interface (except the beacon itself).
+//
+// 执行层的头检查器。提议者选举在共识客户端。
+// difficulty 大于 0 交给内层；等于 0 走 PoS。CreateConsensusEngine 用它包住 clique 或 ethash.NewFaker。
 type Beacon struct {
 	ethone consensus.Engine // Original consensus engine used in eth1, e.g. ethash or clique
 }
@@ -77,6 +80,8 @@ func (beacon *Beacon) Author(header *types.Header) (common.Address, error) {
 
 // VerifyHeader checks whether a header conforms to the consensus rules of the
 // stock Ethereum consensus engine.
+//
+// 父块 difficulty 已是 0 时，子块不能再大于 0。不验证提议者签名。
 func (beacon *Beacon) VerifyHeader(chain consensus.ChainHeaderReader, header *types.Header) error {
 	// During the live merge transition, the consensus engine used the terminal
 	// total difficulty to detect when PoW (PoA) switched to PoS. Maintaining the
@@ -331,6 +336,8 @@ func (beacon *Beacon) verifyHeaders(chain consensus.ChainHeaderReader, headers [
 
 // Prepare implements consensus.Engine, initializing the difficulty field of a
 // header to conform to the beacon protocol. The changes are done inline.
+//
+// 合并后的头把 difficulty 写成 0。
 func (beacon *Beacon) Prepare(chain consensus.ChainHeaderReader, header *types.Header) error {
 	if !chain.Config().IsPostMerge(header.Number.Uint64(), header.Time) {
 		return beacon.ethone.Prepare(chain, header)
@@ -340,6 +347,8 @@ func (beacon *Beacon) Prepare(chain consensus.ChainHeaderReader, header *types.H
 }
 
 // Finalize implements consensus.Engine.
+//
+// PoS 头上是空操作，没有出块奖励。
 func (beacon *Beacon) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state vm.StateDB, body *types.Body) {
 	if !beacon.IsPoSHeader(header) {
 		beacon.ethone.Finalize(chain, header, state, body)
@@ -351,6 +360,8 @@ func (beacon *Beacon) Finalize(chain consensus.ChainHeaderReader, header *types.
 //
 // Note, the method returns immediately and will send the result async. More
 // than one result may also be returned depending on the consensus algorithm.
+//
+// PoS 头直接返回，不往 results 里塞块。封印交给共识层。
 func (beacon *Beacon) Seal(chain consensus.ChainHeaderReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error {
 	if !beacon.IsPoSHeader(block.Header()) {
 		return beacon.ethone.Seal(chain, block, results, stop)
@@ -385,6 +396,7 @@ func (beacon *Beacon) Close() error {
 // IsPoSHeader reports the header belongs to the PoS-stage with some special fields.
 // This function is not suitable for a part of APIs like Prepare or CalcDifficulty
 // because the header difficulty is not set yet.
+// EIP-3675：difficulty 为 0 就是 PoS 头。不再在线累加 TTD。
 func (beacon *Beacon) IsPoSHeader(header *types.Header) bool {
 	if header.Difficulty == nil {
 		panic("IsPoSHeader called with invalid difficulty")

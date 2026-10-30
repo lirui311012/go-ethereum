@@ -19,6 +19,8 @@
 // read-only database.
 // There really are no guarantees in this database, since the local geth does not
 // exclusive access, but it can be used for basic diagnostics of a remote node.
+//
+// 读走 debug_dbGet、debug_dbAncient 和 debug_dbAncients。Put、Delete、NewBatch 以及部分 ancient 读会 panic。Compact 和两种 Sync 直接返回成功。
 package remotedb
 
 import (
@@ -28,6 +30,8 @@ import (
 )
 
 // Database is a key-value lookup for a remote database via debug_dbGet.
+//
+// 只读诊断。远端节点没有把库独占给这个客户端。
 type Database struct {
 	remote *rpc.Client
 }

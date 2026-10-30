@@ -136,6 +136,10 @@ type Ethereum struct {
 
 // New creates a new Ethereum object (including the initialisation of the common Ethereum object),
 // whose lifecycle will be managed by the provided node.
+//
+// 链在这里才出现。node.Node 只提供数据目录和账户管理器。
+// 先建 BlockChain，再把 legacy 池和 blob 池合成 TxPool，最后 RegisterLifecycle。
+// 网络要等 node.Start 调到 Ethereum.Start 才开。
 func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	// Ensure configuration values are compatible and sane
 	if !config.SyncMode.IsValid() {
@@ -458,6 +462,8 @@ func (s *Ethereum) EngineMaxReorgDepth() uint64        { return s.config.EngineM
 
 // Protocols returns all the currently configured
 // network protocols to start.
+//
+// 始终包含 eth。SnapshotCache 大于 0 才加 snap。协议在 eth.New 里注册到 node，这里只是交出列表。
 func (s *Ethereum) Protocols() []p2p.Protocol {
 	protos := eth.MakeProtocols((*ethHandler)(s.handler), s.networkID, s.discmix)
 	if s.config.SnapshotCache > 0 {
@@ -468,6 +474,8 @@ func (s *Ethereum) Protocols() []p2p.Protocol {
 
 // Start implements node.Lifecycle, starting all internal goroutines needed by the
 // Ethereum protocol implementation.
+//
+// node.Start 先开 p2p 和 RPC，再按注册顺序调到这里。这里开发现、handler 和日志索引。
 func (s *Ethereum) Start() error {
 	if err := s.setupDiscovery(); err != nil {
 		return err
@@ -551,6 +559,7 @@ func (s *Ethereum) updateFilterMapsHeads() {
 	}
 }
 
+// DNS 和 ENR 只提供节点地址。区块不从这里进来。
 func (s *Ethereum) setupDiscovery() error {
 	eth.StartENRUpdater(s.blockchain, s.p2pServer.LocalNode())
 

@@ -71,6 +71,9 @@ func (e *protoHandshakeError) Error() string { return fmt.Sprintf("rlpx proto er
 func (e *protoHandshakeError) Unwrap() error { return e.err }
 
 // Server manages all peer connections.
+//
+// 只负责把节点连上，并在一条 TCP 上复用子协议。不传区块语义。
+// node.Start 先于链的 Lifecycle 调用这里的 Start。
 type Server struct {
 	// Config fields may not be modified while the server is running.
 	Config
@@ -332,6 +335,8 @@ func (srv *Server) Stop() {
 
 // Start starts running the server.
 // Servers can not be re-used after stopping.
+//
+// 这里只拉起监听、拨号和 run 循环。eth/snap 子协议要等握手之后，由 Peer.run 按能力表分发。
 func (srv *Server) Start() (err error) {
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
@@ -389,6 +394,7 @@ func (srv *Server) Start() (err error) {
 	return nil
 }
 
+// 本地 ENR 和握手用的 capability 列表在这里备好。协议的 Attributes 写进 ENR。
 func (srv *Server) setupLocalNode() error {
 	// Create the devp2p handshake.
 	pubkey := crypto.FromECDSAPub(&srv.PrivateKey.PublicKey)
@@ -415,6 +421,8 @@ func (srv *Server) setupLocalNode() error {
 	return nil
 }
 
+// UDP 上开 discv4 / discv5。NoDiscovery 时不听 UDP，只建空的发现混合器。
+// 两个发现都开时，v4 认不出的包交给 v5。静态节点不走这里，由拨号调度器单独保持连接。
 func (srv *Server) setupDiscovery() error {
 	// Set up the discovery source mixer. Here, we don't care about the
 	// fairness of the mix, it's just for putting the
@@ -497,6 +505,7 @@ func (srv *Server) setupDiscovery() error {
 	return nil
 }
 
+// 从发现混合器取节点并拨号。静态节点单独保持连接。连上之后交给 SetupConn。
 func (srv *Server) setupDialScheduler() {
 	config := dialConfig{
 		self:           srv.localnode.ID(),
@@ -605,6 +614,8 @@ func (srv *Server) doPeerOp(fn peerOpFunc) {
 }
 
 // run is the main loop of the server.
+//
+// 连接准入的唯一事件循环：人数、重复连接、自连。子协议的消息不经过这里。
 func (srv *Server) run() {
 	srv.log.Info("Started P2P networking", "self", srv.localnode.Node().URLv4())
 	defer srv.loopWG.Done()
@@ -845,6 +856,8 @@ func (srv *Server) checkInboundConn(remoteIP netip.Addr) error {
 // SetupConn runs the handshakes and attempts to add the connection
 // as a peer. It returns when the connection has been added as a peer
 // or the handshakes have failed.
+//
+// 加密握手之后还有协议握手。对端的能力表决定这条连接能跑 eth、snap 里的哪些版本。
 func (srv *Server) SetupConn(fd net.Conn, flags connFlag, dialDest *enode.Node) error {
 	c := &conn{fd: fd, flags: flags, cont: make(chan error)}
 	defer func() {
@@ -960,6 +973,8 @@ func (srv *Server) launchPeer(c *conn) *Peer {
 }
 
 // runPeer runs in its own goroutine for each peer.
+//
+// p.run 按握手时约定的子协议各起一个循环。合并之后的新块不从这里的 eth 广播进来。
 func (srv *Server) runPeer(p *Peer) {
 	if srv.newPeerHook != nil {
 		srv.newPeerHook(p)

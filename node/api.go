@@ -32,6 +32,8 @@ import (
 )
 
 // apis returns the collection of built-in RPC APIs.
+//
+// 节点自带 admin、debug、web3。默认不进公开 HTTP。IPC 和进程内会带上。
 func (n *Node) apis() []rpc.API {
 	return []rpc.API{
 		{

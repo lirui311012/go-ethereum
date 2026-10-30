@@ -42,6 +42,9 @@ import (
 )
 
 // Node is a container on which services can be registered.
+//
+// 它不认识链。数据目录锁、账户管理器、p2p.Server 和几套 RPC 在这里。
+// 链作为 Lifecycle 由 cmd/geth 注册上来。状态只能从初始化到运行，再到关闭。
 type Node struct {
 	config        *Config
 	accman        *accounts.Manager
@@ -68,12 +71,15 @@ type Node struct {
 }
 
 const (
-	initializingState = iota
-	runningState
-	closedState
+	initializingState = iota // New 之后、Start 之前。此阶段才能 Register*
+	runningState             // Start 成功后。不能再注册服务
+	closedState              // Close 之后。不能再次 Start
 )
 
 // New creates a new P2P node, ready for protocol registration.
+//
+// 这里会锁实例目录（DataDir/geth/LOCK），并创建一个空的 AccountManager。
+// 账户后端要由调用方随后装上。DataDir 为空时不锁目录，数据库走内存。
 func New(conf *Config) (*Node, error) {
 	// Copy config and resolve the datadir so future changes to the current
 	// working directory don't affect the node.
@@ -160,6 +166,9 @@ func New(conf *Config) (*Node, error) {
 
 // Start starts all registered lifecycles, RPC services and p2p networking.
 // Node can only be started once.
+//
+// 先 openEndpoints（p2p，再 RPC），再按注册顺序 Lifecycle.Start。
+// 端口可以先于链的后台循环就绪。
 func (n *Node) Start() error {
 	n.startStopLock.Lock()
 	defer n.startStopLock.Unlock()
@@ -264,6 +273,8 @@ func (n *Node) doClose(errs []error) error {
 }
 
 // openEndpoints starts all network and RPC endpoints.
+//
+// 先 p2p.Server.Start，再 startRPC。RPC 端口可以先于链的后台循环就绪。
 func (n *Node) openEndpoints() error {
 	// start networking endpoints
 	n.log.Info("Starting peer-to-peer node", "instance", n.server.Name)
@@ -281,6 +292,8 @@ func (n *Node) openEndpoints() error {
 
 // stopServices terminates running services, RPC and p2p networking.
 // It is the inverse of Start.
+//
+// 先停 RPC，再按注册逆序 Lifecycle.Stop，最后停 p2p。
 func (n *Node) stopServices(running []Lifecycle) error {
 	n.stopRPC()
 
@@ -373,6 +386,8 @@ func (n *Node) obtainJWTSecret(cliParam string) ([]byte, error) {
 // startRPC is a helper method to configure all the various RPC endpoints during node
 // startup. It's not meant to be called at any time afterwards as it makes certain
 // assumptions about the state of the node.
+//
+// 先开进程内和 IPC，它们带全部已注册 API。公开 HTTP/WS 再按模块白名单过滤。
 func (n *Node) startRPC() error {
 	if err := n.startInProc(n.rpcAPIs); err != nil {
 		return err
@@ -485,7 +500,8 @@ func (n *Node) startRPC() error {
 			return err
 		}
 	}
-	// Configure authenticated API
+	// 有 Authenticated API（正常路径是 engine）才开 JWT 端口，默认 8551。
+	// HTTPHost / WSHost 为空则不听对应的公开端口。IPC 在上面已经按配置开启。
 	if len(openAPIs) != len(allAPIs) {
 		jwtSecret, err := n.obtainJWTSecret(n.config.JWTSecret)
 		if err != nil {
@@ -545,6 +561,8 @@ func (n *Node) Wait() {
 }
 
 // RegisterLifecycle registers the given Lifecycle on the node.
+//
+// 只允许在初始化态调用。同一实例注册两次会 panic。协议和 API 的注册也是这个限制。
 func (n *Node) RegisterLifecycle(lifecycle Lifecycle) {
 	n.lock.Lock()
 	defer n.lock.Unlock()
@@ -581,7 +599,10 @@ func (n *Node) RegisterAPIs(apis []rpc.API) {
 }
 
 // getAPIs return two sets of APIs, both the ones that do not require
-// authentication, and the complete set
+// authentication, and the complete set.
+//
+// 公开 HTTP/WS 只用未认证的那一组，再按 HTTPModules / WSModules 白名单过滤。
+// 模块名出现在配置里只表示允许，不表示端口已经在听。IPC 和进程内使用全部 API。
 func (n *Node) getAPIs() (unauthenticated, all []rpc.API) {
 	for _, api := range n.rpcAPIs {
 		if !api.Authenticated {
@@ -649,12 +670,16 @@ func (n *Node) InstanceDir() string {
 	return n.config.instanceDir()
 }
 
-// KeyStoreDir retrieves the key directory
+// KeyStoreDir retrieves the key directory.
+//
+// 一般是 DataDir/keystore，同一数据目录的多个实例共享。无 datadir 时是临时目录，Close 时删除。
 func (n *Node) KeyStoreDir() string {
 	return n.keyDir
 }
 
 // AccountManager retrieves the account manager used by the protocol stack.
+//
+// New 时是空的。后端由 cmd/geth 的 setAccountManagerBackends 后加。
 func (n *Node) AccountManager() *accounts.Manager {
 	return n.accman
 }
@@ -702,6 +727,7 @@ func (n *Node) OpenDatabaseWithOptions(name string, opt DatabaseOptions) (ethdb.
 	}
 	var db ethdb.Database
 	var err error
+	// 没有数据目录时用内存库。进程退出后链上数据消失。
 	if n.config.DataDir == "" {
 		db, _ = rawdb.Open(memorydb.New(), rawdb.OpenOptions{
 			MetricsNamespace: opt.MetricsNamespace,

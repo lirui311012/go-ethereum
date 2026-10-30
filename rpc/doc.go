@@ -17,6 +17,10 @@
 /*
 Package rpc implements bi-directional JSON-RPC 2.0 on multiple transports.
 
+本包只负责传输和反射。eth_* 的业务在 internal/ethapi，engine_* 在 eth/catalyst。
+导出方法要首字母大写，返回值是结果、结果加 error，或只有 error。
+订阅要有通知通道。HTTP 短请求拿不到，IPC 和 WebSocket 可以。
+
 It provides access to the exported methods of an object across a network or other I/O
 connection. After creating a server or client instance, objects can be registered to make
 them visible as 'services'. Exported methods that follow specific conventions can be

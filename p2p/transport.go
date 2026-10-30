@@ -46,6 +46,8 @@ const (
 
 // rlpxTransport is the transport used by actual (non-test) connections.
 // It wraps an RLPx connection with locks and read/write deadlines.
+//
+// doEncHandshake 先做加密握手，doProtoHandshake 再交换名字和 caps。
 type rlpxTransport struct {
 	rmu, wmu sync.Mutex
 	wbuf     bytes.Buffer

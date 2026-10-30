@@ -65,6 +65,8 @@ func (n *BlockNonce) UnmarshalText(input []byte) error {
 //go:generate go run ../../rlp/rlpgen -type Header -out gen_header_rlp.go
 
 // Header represents a block header in the Ethereum blockchain.
+//
+// Hash 是这份头 RLP 的 keccak256。按分叉可选出现的字段带 rlp:"optional"。
 type Header struct {
 	ParentHash  common.Hash    `json:"parentHash"       gencodec:"required"`
 	UncleHash   common.Hash    `json:"sha3Uncles"       gencodec:"required"`
@@ -180,6 +182,8 @@ func (h *Header) EmptyReceipts() bool {
 
 // Body is a simple (mutable, non-safe) data container for storing and moving
 // a block's data contents (transactions and uncles) together.
+//
+// 交易、叔块和提款。区块访问列表另存在 Block 上，协议编码里不含它。
 type Body struct {
 	Transactions []*Transaction
 	Uncles       []*Header
@@ -203,6 +207,8 @@ type Body struct {
 //
 //   - We do not copy body data on access because it does not affect the caches, and also
 //     because it would be too expensive.
+//
+// 在 Header 和 Body 之上缓存哈希。规范链按高度指向这里的哈希，库里还可以有侧链块。
 type Block struct {
 	header       *Header
 	uncles       []*Header

@@ -59,6 +59,8 @@ type Encoder interface {
 // buffered.
 //
 // Please see package-level documentation of encoding rules.
+//
+// 实现了 Encoder 的类型走 EncodeRLP。结构体导出字段按顺序编成列表。[]byte 是字符串。rlp:"optional" 让零值可以省略，后面的字段必须是 optional，或最后一个 tail。同一个字段不能同时带这两个 tag。
 func Encode(w io.Writer, val interface{}) error {
 	// Optimization: reuse *encBuffer when called by EncodeRLP.
 	if buf := encBufferFromWriter(w); buf != nil {

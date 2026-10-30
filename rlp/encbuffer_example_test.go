@@ -23,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
+// Done
 func ExampleEncoderBuffer() {
 	var w bytes.Buffer
 

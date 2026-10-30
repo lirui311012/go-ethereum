@@ -176,6 +176,10 @@ func (b *batchCallBuffer) doWrite(ctx context.Context, conn jsonWriter, isErrorR
 }
 
 // handleBatch executes all messages in a batch and returns the responses.
+//
+// 同一个 call goroutine 里按顺序执行。空批和条数超限整批返回一个错误。
+// 响应字节超限时，已经算完的调用仍返回原结果，还没执行的才报响应过大。
+// 上限由 node 在 SetBatchLimits 里设。公开口默认 1000 条、25000000 字节；0 表示不限制。
 func (h *handler) handleBatch(msgs []*jsonrpcMessage) {
 	// For valid batches, filter response messages and subscription notifications
 	// out of msgs here.
@@ -296,6 +300,8 @@ func (h *handler) respondWithBatchTooLarge(cp *callProc, batch []*jsonrpcMessage
 }
 
 // handleMsg handles a single non-batch message.
+//
+// 真正的反射调用在 handleCall 里，按方法名查注册表。
 func (h *handler) handleMsg(msg *jsonrpcMessage) {
 	msgs := []*jsonrpcMessage{msg}
 	h.handleResponses(msgs, func(msg *jsonrpcMessage) {
@@ -603,6 +609,9 @@ func (h *handler) handleCall(cp *callProc, msg *jsonrpcMessage) *jsonrpcMessage 
 }
 
 // handleSubscribe processes *_subscribe method calls.
+//
+// 方法名必须以 _subscribe 结尾。第一个参数是订阅名，例如 eth_subscribe 加 "newHeads"。
+// HTTP 上 allowSubscribe 是 false，这里直接返回不支持通知。
 func (h *handler) handleSubscribe(cp *callProc, msg *jsonrpcMessage) *jsonrpcMessage {
 	if !h.allowSubscribe {
 		return msg.errorResponse(ErrNotificationsUnsupported)

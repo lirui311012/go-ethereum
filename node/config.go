@@ -331,6 +331,7 @@ func (c *Config) NodeName() string {
 	return name
 }
 
+// geth 里是 "geth"。实例目录是 DataDir/这个名字，也就是 DataDir/geth。
 func (c *Config) name() string {
 	if c.Name == "" {
 		progname := strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe")
@@ -352,6 +353,8 @@ var isOldGethResource = map[string]bool{
 }
 
 // ResolvePath resolves path in the instance directory.
+//
+// 若 datadir 根上仍有早期的 chaindata、nodes、nodekey，继续用旧路径并打废弃警告。
 func (c *Config) ResolvePath(path string) string {
 	if filepath.IsAbs(path) {
 		return path
@@ -476,6 +479,8 @@ func (c *Config) KeyDirConfig() (string, error) {
 
 // GetKeyStoreDir retrieves the key directory and will create
 // and ephemeral one if necessary.
+//
+// 没有数据目录时建临时 keystore。第二个返回值表示 Close 时要删掉这个目录。
 func (c *Config) GetKeyStoreDir() (string, bool, error) {
 	keydir, err := c.KeyDirConfig()
 	if err != nil {

@@ -27,6 +27,8 @@ import (
 // senderFromServer is a types.Signer that remembers the sender address returned by the RPC
 // server. It is stored in the transaction's sender address cache to avoid an additional
 // request in TransactionSender.
+//
+// 只缓存节点已经返回的发送者。ChainID、Hash、SignatureValues 会 panic，不能用来签名。
 type senderFromServer struct {
 	addr      common.Address
 	blockhash common.Hash

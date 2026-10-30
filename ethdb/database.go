@@ -15,6 +15,8 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package ethdb defines the interfaces for an Ethereum data store.
+//
+// 只有键值和 ancient 两套接口。区块键前缀在 core/rawdb，打开节点时才选定具体引擎，默认是 pebble。
 package ethdb
 
 import (
@@ -96,6 +98,8 @@ type Compacter interface {
 
 // KeyValueStore contains all the methods required to allow handling different
 // key-value data stores backing the high level database.
+//
+// 热数据走这里：近期区块、合约代码、trie 节点。批量写入先进入 Batch，Write 才提交到宿主库。
 type KeyValueStore interface {
 	KeyValueReader
 	KeyValueWriter
@@ -204,6 +208,8 @@ type Reader interface {
 
 // AncientStore contains all the methods required to allow handling different
 // ancient data stores backing immutable data store.
+//
+// 只追加。链回滚用 TruncateHead 丢掉新端，历史裁剪用 TruncateTail 丢掉旧端。文件布局在 core/rawdb 的 freezer。
 type AncientStore interface {
 	AncientReader
 	AncientWriter
@@ -221,6 +227,8 @@ type ResettableAncientStore interface {
 
 // Database contains all the methods required by the high level database to not
 // only access the key-value data store but also the ancient chain store.
+//
+// 节点打开的库同时实现这两套接口。远离头部的规范区块在 ancient，靠近头部的仍在 KV。
 type Database interface {
 	KeyValueStore
 	AncientStore

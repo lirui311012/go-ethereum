@@ -276,6 +276,9 @@ func (h *handler) decHandlers() {
 
 // runEthPeer registers an eth peer into the joint eth/snap peerset, adds it to
 // various subsystems and starts handling messages.
+//
+// 对端宣告了 snap 时，waitSnapExtension 等到扩展登记后再做 eth 握手。没宣告则立刻继续握手。
+// 核对 networkID、创世、forkID、区块范围。通过后把 peer 交给 downloader。AcceptTxs 在 synced 之前为假，交易公告会被丢掉。
 func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
 	if !h.incHandlers() {
 		return p2p.DiscQuitting

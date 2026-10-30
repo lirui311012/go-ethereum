@@ -50,6 +50,9 @@ const (
 )
 
 // Receipt represents the results of a transaction.
+//
+// 共识部分是类型、PostState 或 Status、累计 gas、Bloom、日志。
+// TxHash 和合约地址留在实现侧。落盘不存 Bloom。
 type Receipt struct {
 	// Consensus fields: These fields are defined by the Yellow Paper
 	Type              uint8  `json:"type,omitempty"`

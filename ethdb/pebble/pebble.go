@@ -15,6 +15,8 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package pebble implements the key-value database layer based on pebble.
+//
+// 当前默认的 KV 引擎。node/database.go 的 newPebbleDBDatabase 先调 NeedsV1，旧格式走 NewV1，其余走这里的 v2。
 package pebble
 
 import (
@@ -56,6 +58,8 @@ const (
 // Database is a persistent key-value store based on the pebble v2 storage engine.
 // Apart from basic data storage functionality it also supports batch writes and
 // iterating over the keyspace in binary-alphabetical order.
+//
+// 实现 ethdb.KeyValueStore。ancient freezer 由 core/rawdb 另外打开，不在这个结构里。
 type Database struct {
 	fn        string     // filename for reporting
 	db        *pebble.DB // Underlying pebble storage engine
@@ -178,6 +182,8 @@ func (l panicLogger) Fatalf(format string, args ...interface{}) {
 
 // New returns a wrapped pebble DB object. The namespace is the prefix that the
 // metrics reporting should use for surfacing internal stats.
+//
+// 直接打开 pebble v2。旧格式目录由 node/database.go 改调 NewV1。
 func New(file string, cache int, handles int, namespace string, readonly bool) (*Database, error) {
 	// Ensure we have some minimal caching and file guarantees
 	if cache < minCache {

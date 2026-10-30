@@ -20,6 +20,8 @@ import "sync"
 
 // Cache is a LRU cache.
 // This type is safe for concurrent use.
+//
+// 按条目数淘汰。容量满了再 Add，丢掉最久没被 Add 或 Get 碰到的那条。Add 的返回值表示这次有没有淘汰。
 type Cache[K comparable, V any] struct {
 	cache BasicLRU[K, V]
 	mu    sync.Mutex

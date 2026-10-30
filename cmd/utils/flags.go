@@ -1524,6 +1524,9 @@ func SetP2PConfig(ctx *cli.Context, cfg *p2p.Config) {
 }
 
 // SetNodeConfig applies node-related command line flags to the config.
+//
+// 节点侧 flag：P2P、IPC、HTTP、数据目录。多数用 ctx.IsSet，没写在命令行上的不会盖掉 TOML。
+// HTTP 和 WebSocket 默认关闭。模块列表只是允许，不代表端口已经在听。
 func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 	SetP2PConfig(ctx, &cfg.P2P)
 	setIPC(ctx, cfg)
@@ -1742,6 +1745,8 @@ func setRequiredBlocks(ctx *cli.Context, cfg *ethconfig.Config) {
 }
 
 // SetEthConfig applies eth-related command line flags to the config.
+//
+// 协议侧 flag。必须在账户后端装好之后调用，--dev 要在这里解锁开发账户。
 func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	// Avoid conflicting network flags
 	flags.CheckExclusive(ctx, MainnetFlag, DeveloperFlag, SepoliaFlag, HoodiFlag, OverrideGenesisFlag)
@@ -2220,6 +2225,9 @@ func SetDNSDiscoveryDefaults(cfg *ethconfig.Config, genesis common.Hash) {
 
 // RegisterEthService adds an Ethereum client to the stack.
 // The second return value is the full node instance.
+//
+// 调用 eth.New。数据库、区块链、交易池在这里建好，并注册成协议、API 和 Lifecycle。
+// 此时尚未 Start。失败直接退出。
 func RegisterEthService(stack *node.Node, cfg *ethconfig.Config) (*eth.EthAPIBackend, *eth.Ethereum) {
 	backend, err := eth.New(stack, cfg)
 	if err != nil {

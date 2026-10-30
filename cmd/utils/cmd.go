@@ -115,6 +115,9 @@ func Fatalf(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
+// 真正调用 stack.Start 的地方。cmd/geth 里同名的 startNode 只是转调这里，再订钱包事件。
+// 本函数返回后进程还在。SIGINT 或 SIGTERM 才 stack.Close。
+// 控制台模式丢掉 SIGINT，留给 JS 控制台；SIGTERM 仍然关机。
 func StartNode(ctx *cli.Context, stack *node.Node, isConsole bool) {
 	if err := stack.Start(); err != nil {
 		Fatalf("Error starting protocol stack: %v", err)

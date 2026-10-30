@@ -326,6 +326,7 @@ func (r *PrefixedRegistry) Unregister(name string) {
 }
 
 var (
+	// DefaultRegistry 是包级 Register 和 GetOrRegister 的落点。各子系统用名字登记 counter 和 meter。
 	DefaultRegistry = NewRegistry()
 )
 

@@ -23,4 +23,6 @@
 // as unsigned slice to signed slice. Bit size type casting is also
 // handled. ints with a bit size of 32 will be properly cast to int256,
 // etc.
+//
+// 本包只编解码。Pack 的结果已经带 4 字节选择器。发交易在 ethclient 或钱包里。
 package abi

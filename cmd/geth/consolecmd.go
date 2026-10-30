@@ -67,6 +67,9 @@ JavaScript API. See https://geth.ethereum.org/docs/interacting-with-geth/javascr
 
 // localConsole starts a new geth node, attaching a JavaScript console to it at the
 // same time.
+//
+// 同样 makeFullNode 并启动，再用 stack.Attach 进进程内 JS 控制台。
+// startNode 的第三个参数为 true，避免和读终端的提示抢 SIGINT。
 func localConsole(ctx *cli.Context) error {
 	// Create and start the node based on the CLI flags
 	prepare(ctx)
@@ -109,6 +112,8 @@ func localConsole(ctx *cli.Context) error {
 
 // remoteConsole will connect to a remote geth instance, attaching a JavaScript
 // console to it.
+//
+// 不建节点。没给端点就拨本机 IPC。
 func remoteConsole(ctx *cli.Context) error {
 	if ctx.Args().Len() > 1 {
 		utils.Fatalf("invalid command-line: too many arguments")

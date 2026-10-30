@@ -22,6 +22,8 @@ import (
 
 // StorageSize is a wrapper around a float value that supports user friendly
 // formatting.
+//
+// 单位是字节。String 打成 B、KiB、MiB、GiB 或 TiB，给日志看，不参与计算。
 type StorageSize float64
 
 // String implements the stringer interface.

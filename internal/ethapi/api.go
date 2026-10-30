@@ -75,6 +75,8 @@ func NewEthereumAPI(b Backend) *EthereumAPI {
 }
 
 // GasPrice returns a suggestion for a gas price for legacy transactions.
+//
+// 先取 tip，再加当前头的 base fee。不走出块路径，采样在 eth/gasprice。
 func (api *EthereumAPI) GasPrice(ctx context.Context) (*hexutil.Big, error) {
 	tipcap, err := api.b.SuggestGasTipCap(ctx)
 	if err != nil {
@@ -301,6 +303,8 @@ func NewEthereumAccountAPI(am *accounts.Manager) *EthereumAccountAPI {
 }
 
 // Accounts returns the collection of accounts this node manages.
+//
+// 只返回地址列表。解开 keystore 在 accounts/keystore，不在这个方法里。
 func (api *EthereumAccountAPI) Accounts() []common.Address {
 	return api.am.Accounts()
 }
@@ -856,6 +860,8 @@ func DoCall(ctx context.Context, b Backend, args TransactionArgs, blockNrOrHash 
 //
 // Note, this function doesn't make and changes in the state/blockchain and is
 // useful to execute and retrieve values.
+//
+// 在指定块的状态上跑一遍 EVM，不写状态，也不进交易池。超时由 RPCEVMTimeout 取消。
 func (api *BlockChainAPI) Call(ctx context.Context, args TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash, overrides *override.StateOverride, blockOverrides *override.BlockOverrides) (hexutil.Bytes, error) {
 	if blockNrOrHash == nil {
 		latest := rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber)
@@ -977,6 +983,8 @@ func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNr
 // value is capped by both `args.Gas` (if non-nil & non-zero) and the backend's RPCGasCap
 // configuration (if non-zero).
 // Note: Required blob gas is not computed in this method.
+//
+// 二分搜索能成功的最小 gas limit。二维 gas 在这次执行内部发生，返回值仍是交易要填的那一个数。
 func (api *BlockChainAPI) EstimateGas(ctx context.Context, args TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash, overrides *override.StateOverride, blockOverrides *override.BlockOverrides) (hexutil.Uint64, error) {
 	bNrOrHash := rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber)
 	if blockNrOrHash != nil {
@@ -1635,6 +1643,8 @@ func MarshalReceipt(receipt *types.Receipt, blockHash common.Hash, blockNumber u
 }
 
 // sign is a helper function that signs a transaction with the private key of the given address.
+//
+// AccountManager.Find 找到钱包再 SignTx。keystore 账户要已经在进程里解开。eth_sendRawTransaction 不走这里。
 func (api *TransactionAPI) sign(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
 	// Look up the wallet containing the requested signer
 	account := accounts.Account{Address: addr}
@@ -1648,6 +1658,8 @@ func (api *TransactionAPI) sign(addr common.Address, tx *types.Transaction) (*ty
 }
 
 // SubmitTransaction is a helper function that submits tx to txPool and logs a message.
+//
+// 先查手续费上限。未开 unprotected 时要求 tx.Protected()。通过后 Backend.SendTx 进入交易池。
 func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (common.Hash, error) {
 	// If the transaction fee cap is already specified, ensure the
 	// fee of the given transaction is _reasonable_.
@@ -1746,6 +1758,8 @@ func (api *TransactionAPI) currentBlobSidecarVersion() byte {
 
 // SendRawTransaction will add the signed transaction to the transaction pool.
 // The sender is responsible for signing the transaction and using the correct nonce.
+//
+// 节点不在这里签名。blob 交易必须走这条原始交易路径，不能走 eth_sendTransaction。
 func (api *TransactionAPI) SendRawTransaction(ctx context.Context, input hexutil.Bytes) (common.Hash, error) {
 	tx := new(types.Transaction)
 	if err := tx.UnmarshalBinary(input); err != nil {

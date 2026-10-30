@@ -44,6 +44,9 @@ type newBackendEvent struct {
 
 // Manager is an overarching account manager that can communicate with various
 // backends for signing transactions.
+//
+// node.New 只建一个空的 Manager。后端由 cmd/geth 的 setAccountManagerBackends 装上。
+// 外部签名器和本地 keystore 不会同时挂。
 type Manager struct {
 	backends    map[reflect.Type][]Backend // Index of backends currently registered
 	updaters    []event.Subscription       // Wallet update subscriptions for all backends
@@ -60,6 +63,8 @@ type Manager struct {
 
 // NewManager creates a generic account manager to sign transaction via various
 // supported backends.
+//
+// 立刻起 update 循环。调用方随后用 AddBackend 追加后端，并等到那个后端已经并进缓存。
 func NewManager(config *Config, backends ...Backend) *Manager {
 	// Retrieve the initial list of wallets from the backends and sort by URL
 	var wallets []Wallet
@@ -101,6 +106,8 @@ func (am *Manager) Close() error {
 
 // AddBackend starts the tracking of an additional backend for wallet updates.
 // cmd/geth assumes once this func returns the backends have been already integrated.
+//
+// 把后端丢进 update 循环，等 processed 关掉才返回。这样返回时 Wallets 里已经有它。
 func (am *Manager) AddBackend(backend Backend) {
 	done := make(chan struct{})
 	am.newBackends <- newBackendEvent{backend, done}
@@ -109,6 +116,8 @@ func (am *Manager) AddBackend(backend Backend) {
 
 // update is the wallet event loop listening for notifications from the backends
 // and updating the cache of wallets.
+//
+// 钱包列表按 URL 排序。Arrived 插入，Dropped 删掉，再原样转发给 Manager 的订阅者。
 func (am *Manager) update() {
 	// Close all subscriptions when the manager terminates
 	defer func() {
@@ -218,6 +227,9 @@ func (am *Manager) Accounts() []common.Address {
 // Find attempts to locate the wallet corresponding to a specific account. Since
 // accounts can be dynamically added to and removed from wallets, this method has
 // a linear runtime in the number of wallets.
+//
+// eth_sendTransaction 用地址找到钱包再 SignTx。找不到是 ErrUnknownAccount。
+// eth_sendRawTransaction 不经过这里。
 func (am *Manager) Find(account Account) (Wallet, error) {
 	am.lock.RLock()
 	defer am.lock.RUnlock()

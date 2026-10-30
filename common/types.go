@@ -53,6 +53,9 @@ var (
 )
 
 // Hash represents the 32 byte Keccak256 hash of arbitrary data.
+//
+// 区块、交易、状态根都用它。Hex 和 json.Marshal 是 0x 加小写十六进制，没有 EIP-55。
+// 同一份哈希在 RPC 里是字符串，在 RLP 里是 32 个原始字节。
 type Hash [HashLength]byte
 
 // BytesToHash sets b to hash.
@@ -92,6 +95,8 @@ func (h Hash) Bytes() []byte { return h[:] }
 func (h Hash) Big() *big.Int { return new(big.Int).SetBytes(h[:]) }
 
 // Hex converts a hash to a hex string.
+//
+// 只有 0x 和小写十六进制。地址的校验和在 Address.Hex，不在这里。
 func (h Hash) Hex() string { return hexutil.Encode(h[:]) }
 
 // TerminalString implements log.TerminalStringer, formatting a string for console
@@ -153,6 +158,9 @@ func (h Hash) MarshalText() ([]byte, error) {
 
 // SetBytes sets the hash to the value of b.
 // If b is larger than len(h), b will be cropped from the left.
+//
+// 长输入丢掉左边，只留末尾 32 字节。短输入写到数组尾部，左边原有字节不会清掉。
+// BytesToHash 从零值出发，所以短输入看起来像靠左补零。这和 EVM 把数值放在 32 字节字右侧是同一习惯。
 func (h *Hash) SetBytes(b []byte) {
 	if len(b) > len(h) {
 		b = b[len(b)-HashLength:]
@@ -219,6 +227,9 @@ func (h UnprefixedHash) MarshalText() ([]byte, error) {
 /////////// Address
 
 // Address represents the 20 byte address of an Ethereum account.
+//
+// HexToAddress("0x1") 得到末尾为 0x01 的 20 字节，前面补零。
+// 把 32 字节哈希塞进来会丢掉高 12 字节。比较地址用字节，不要比 Hex 字符串。
 type Address [AddressLength]byte
 
 // BytesToAddress returns Address with value b.
@@ -258,6 +269,9 @@ func (a Address) Bytes() []byte { return a[:] }
 func (a Address) Big() *big.Int { return new(big.Int).SetBytes(a[:]) }
 
 // Hex returns an EIP55-compliant hex string representation of the address.
+//
+// 对小写十六进制做一次 keccak，对应半字节大于 7 时把该字符改成大写。
+// String 和 %s 走这里。MarshalText 以及 json.Marshal 仍是小写 0x。
 func (a Address) Hex() string {
 	return string(a.checksumHex())
 }
@@ -325,6 +339,8 @@ func (a Address) Format(s fmt.State, c rune) {
 
 // SetBytes sets the address to the value of b.
 // If b is larger than len(a), b will be cropped from the left.
+//
+// 裁的是左边。JSON 解码不走这里，长度必须刚好 20 字节，多一位或少一位会失败。
 func (a *Address) SetBytes(b []byte) {
 	if len(b) > len(a) {
 		b = b[len(b)-AddressLength:]
@@ -333,6 +349,8 @@ func (a *Address) SetBytes(b []byte) {
 }
 
 // MarshalText returns the hex representation of a.
+//
+// 小写 0x，不带 EIP-55。要在 JSON 里带校验和，用 AddressEIP55。
 func (a Address) MarshalText() ([]byte, error) {
 	return hexutil.Bytes(a[:]).MarshalText()
 }
@@ -394,7 +412,9 @@ func (a UnprefixedAddress) MarshalText() ([]byte, error) {
 }
 
 // MixedcaseAddress retains the original string, which may or may not be
-// correctly checksummed
+// correctly checksummed.
+//
+// 保留调用方原来的大小写。ValidChecksum 拿它和 Address.Hex 的校验和形式比。
 type MixedcaseAddress struct {
 	addr     Address
 	original string
@@ -453,7 +473,9 @@ func (ma *MixedcaseAddress) Original() string {
 	return ma.original
 }
 
-// AddressEIP55 is an alias of Address with a customized json marshaller
+// AddressEIP55 is an alias of Address with a customized json marshaller.
+//
+// json.Marshal 走校验和。普通 Address 的 JSON 是小写。
 type AddressEIP55 Address
 
 // String returns the hex representation of the address in the manner of EIP55.

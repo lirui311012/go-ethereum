@@ -323,6 +323,7 @@ func SetupGenesisBlock(db ethdb.Database, triedb *triedb.Database, genesis *Gene
 	return SetupGenesisBlockWithOverride(db, triedb, genesis, nil, nil)
 }
 
+// 空库写入创世。已有创世时，分叉配置若把已过的分叉改到当前头之下，返回 ConfigCompatError，新配置不落盘。
 func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *triedb.Database, genesis *Genesis, overrides *ChainOverrides, tracer *tracing.Hooks) (*params.ChainConfig, common.Hash, *params.ConfigCompatError, error) {
 	// Copy the genesis, so we can operate on a copy.
 	genesis = genesis.copy()
@@ -566,6 +567,8 @@ func (g *Genesis) toBlockWithRoot(root common.Hash) *types.Block {
 
 // Commit writes the block and state of a genesis specification to the database.
 // The block is committed as the canonical head block.
+//
+// 块号必须是 0。写成规范头。
 func (g *Genesis) Commit(db ethdb.Database, triedb *triedb.Database, tracer *tracing.Hooks) (*types.Block, error) {
 	if g.Number != 0 {
 		return nil, errors.New("can't commit genesis block with number > 0")

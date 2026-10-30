@@ -390,6 +390,8 @@ var NetworkNames = map[string]string{
 // ChainConfig is stored in the database on a per block basis. This means
 // that any network, identified by its genesis block, can have its own
 // set of configuration options.
+//
+// 同一份代码靠库里的这份配置区分主网、测试网和 --dev。Merge 前的分叉是区块号，nil 表示不启用，0 表示创世已启用。Shanghai 起改成时间戳。
 type ChainConfig struct {
 	ChainID *big.Int `json:"chainId"` // chainId identifies the current chain and is used for replay protection
 
@@ -1383,6 +1385,8 @@ type Rules struct {
 }
 
 // Rules ensures c's ChainID is not nil.
+//
+// NewEVM 用这次结果选跳转表和预编译，换交易不重算 EVM 里的那份快照。execute 仍会按同一块再调一次 Rules。
 func (c *ChainConfig) Rules(num *big.Int, isMerge bool, timestamp uint64) Rules {
 	// disallow setting Merge out of order
 	isMerge = isMerge && c.IsLondon(num)

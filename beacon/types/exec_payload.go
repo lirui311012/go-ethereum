@@ -34,6 +34,8 @@ type payloadType interface {
 }
 
 // convertPayload converts a beacon chain execution payload to types.Block.
+//
+// 信标块里的执行载荷收成执行层的块。Deneb 起才把 parentRoot 写成执行头的父信标根。requests 只在 Electra 及以后传入。
 func convertPayload[T payloadType](payload T, parentRoot *zrntcommon.Root, requests [][]byte) (*types.Block, error) {
 	var (
 		header       types.Header

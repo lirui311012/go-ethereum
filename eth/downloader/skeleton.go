@@ -204,6 +204,8 @@ type backfiller interface {
 // the node's header chain, storing the headers ephemerally until sync finishes
 // is wasted disk IO, but it's a price we're going to pay to keep things simple
 // for now.
+//
+// 只排 header。接到本地已有头之后，由 backfiller 回填 body 和收据。
 type skeleton struct {
 	db     ethdb.Database // Database backing the skeleton
 	filler backfiller     // Chain syncer suspended/resumed by head events

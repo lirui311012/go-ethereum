@@ -113,6 +113,9 @@ type btHeaderMarshaling struct {
 	SlotNumber    *math.HexOrDecimal64
 }
 
+// Run inserts the given blocks and validates the imported chain.
+//
+// 建 core.BlockChain 后走 InsertChain。向量目录不在时，上层测试会跳过。
 func (t *BlockTest) Run(snapshotter bool, scheme string, witness bool, tracer *tracing.Hooks, postCheck func(error, *core.BlockChain)) (result error) {
 	config, ok := Forks[t.json.Network]
 	if !ok {

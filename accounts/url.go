@@ -35,6 +35,9 @@ import (
 //
 // As such, these URLs should not be used outside of the scope of an Ethereum
 // wallet or account.
+//
+// scheme 标识后端：keystore、ledger、trezor、extapi。path 在那个后端里唯一。
+// 比较只比字符串，不做百分号编码，所以同一种钱包只有一种写法。
 type URL struct {
 	Scheme string // Protocol scheme to identify a capable account backend
 	Path   string // Path for the backend to identify a unique entity

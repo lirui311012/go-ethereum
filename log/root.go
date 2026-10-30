@@ -16,6 +16,8 @@ func init() {
 }
 
 // SetDefault sets the default global logger
+//
+// log.Info 等包级函数都读这份根 logger。节点启动时按 --log.format 换成终端、JSON 或 logfmt。
 func SetDefault(l Logger) {
 	rootLock.Lock()
 	defer rootLock.Unlock()
@@ -112,6 +114,8 @@ func Error(msg string, ctx ...interface{}) {
 //	log.Crit("msg")
 //	log.Crit("msg", "key1", val1)
 //	log.Crit("msg", "key1", val1, "key2", val2)
+//
+// 写完这条日志后调用 os.Exit(1)，进程就此结束。
 func Crit(msg string, ctx ...interface{}) {
 	Root().Write(LevelCrit, msg, ctx...)
 	os.Exit(1)

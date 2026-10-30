@@ -176,6 +176,9 @@ type txDrop struct {
 //   - Each peer that announced transactions may be scheduled retrievals, but
 //     only ever one concurrently. This ensures we can immediately know what is
 //     missing from a reply and reschedule it.
+//
+// 协议 handler 不直接入池。哈希公告先等大约 500ms，交易体没到再去要。
+// synced 之前上游会丢掉这些包。
 type TxFetcher struct {
 	notify  chan *txAnnounce
 	cleanup chan *txDelivery

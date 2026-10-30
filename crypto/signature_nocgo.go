@@ -17,6 +17,7 @@
 //go:build nacl || js || wasip1 || !cgo || gofuzz || tinygo
 // +build nacl js wasip1 !cgo gofuzz tinygo
 
+// nacl、js、wasip1、无 cgo、gofuzz 或 tinygo 时编译这份纯 Go 实现。函数签名和 signature_cgo.go 一致。
 package crypto
 
 import (

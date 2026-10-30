@@ -83,6 +83,8 @@ func (m SchemeMap) NodeAddr(r *Record) []byte {
 }
 
 // Record represents a node record. The zero value is an empty record.
+//
+// 可扩展的键值记录，改任何字段都要重新签名。discv5 在它外面再加 session。
 type Record struct {
 	seq       uint64 // sequence number
 	signature []byte // the signature

@@ -75,7 +75,9 @@ func HashData(kh KeccakState, data []byte) (h common.Hash) {
 	return h
 }
 
-// CreateAddress creates an ethereum address given the bytes and the nonce
+// CreateAddress creates an ethereum address given the bytes and the nonce.
+//
+// keccak(rlp([sender, nonce])) 的后 20 字节。
 func CreateAddress(b common.Address, nonce uint64) common.Address {
 	data, _ := rlp.EncodeToBytes([]interface{}{b, nonce})
 	return common.BytesToAddress(Keccak256(data)[12:])
@@ -83,6 +85,8 @@ func CreateAddress(b common.Address, nonce uint64) common.Address {
 
 // CreateAddress2 creates an ethereum address given the address bytes, initial
 // contract code hash and a salt.
+//
+// 0xff、sender、salt、initcode 哈希拼起来再 keccak，取后 20 字节。
 func CreateAddress2(b common.Address, salt [32]byte, inithash []byte) common.Address {
 	return common.BytesToAddress(Keccak256([]byte{0xff}, b.Bytes(), salt[:], inithash)[12:])
 }
@@ -237,6 +241,9 @@ func GenerateKey() (*ecdsa.PrivateKey, error) {
 
 // ValidateSignatureValues verifies whether the signature values are valid with
 // the given chain rules. The v value is assumed to be either 0 or 1.
+//
+// r、s 从 1 到 N−1（含 1，不含曲线阶 N），v 为 0 或 1。Homestead 起还要求 s 不超过半阶。交易里带 chain ID 的 V 在 core/types 的 Signer。
+// 本包不管理口令，解锁在 accounts/keystore。
 func ValidateSignatureValues(v byte, r, s *big.Int, homestead bool) bool {
 	if r.Cmp(common.Big1) < 0 || s.Cmp(common.Big1) < 0 {
 		return false
@@ -250,6 +257,7 @@ func ValidateSignatureValues(v byte, r, s *big.Int, homestead bool) bool {
 	return r.Cmp(secp256k1N) < 0 && s.Cmp(secp256k1N) < 0 && (v == 0 || v == 1)
 }
 
+// 去掉未压缩公钥的 0x04 前缀，keccak 的后 20 字节。
 func PubkeyToAddress(p ecdsa.PublicKey) common.Address {
 	pubBytes := FromECDSAPub(&p)
 	return common.BytesToAddress(Keccak256(pubBytes[1:])[12:])

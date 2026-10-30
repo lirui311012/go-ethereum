@@ -31,6 +31,8 @@ import (
 // a single interface to the old MPT trie and the new verkle/binary trie. Reads
 // first from the overlay trie, and falls back to the base trie if the key isn't
 // found. All writes go to the overlay trie.
+//
+// 读先问 overlay（BinaryTrie），没有再问只读的 base MPT。写只进 overlay。base 为 nil 时这只是 UBT 的包装，迁移是否进行中看 TransitionState.InTransition。
 type TransitionTrie struct {
 	overlay *bintrie.BinaryTrie
 	base    *trie.SecureTrie
@@ -41,6 +43,8 @@ type TransitionTrie struct {
 // Note: base can be nil when using TransitionTrie as a wrapper for BinaryTrie
 // to work around import cycles. This is a temporary hack that should be
 // refactored in future PRs (see core/state/reader.go for details).
+//
+// newUBTTrieReader 在 InTransition 时传入 MPT，否则传入 nil base，这时只包住 BinaryTrie。
 func NewTransitionTrie(base *trie.SecureTrie, overlay *bintrie.BinaryTrie, st bool) *TransitionTrie {
 	return &TransitionTrie{
 		overlay: overlay,

@@ -75,6 +75,9 @@ type BatchElem struct {
 }
 
 // Client represents a connection to an RPC server.
+//
+// ethclient 包的是这一层，不参与节点内部组装。
+// isHTTP 为真时不支持订阅。
 type Client struct {
 	idgen    func() ID // for subscriptions
 	isHTTP   bool      // connection type: http, ws or ipc
@@ -501,6 +504,8 @@ func (c *Client) EthSubscribe(ctx context.Context, channel interface{}, args ...
 // before considering the subscriber dead. The subscription Err channel will receive
 // ErrSubscriptionQueueOverflow. Use a sufficiently large buffer on the channel or ensure
 // that the channel usually has at least one reader to prevent this issue.
+//
+// HTTP 客户端会直接返回 ErrNotificationsUnsupported。
 func (c *Client) Subscribe(ctx context.Context, namespace string, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
 	// Check type of channel first.
 	chanVal := reflect.ValueOf(channel)

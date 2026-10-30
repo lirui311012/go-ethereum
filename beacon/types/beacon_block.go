@@ -40,6 +40,8 @@ type blockObject interface {
 }
 
 // BeaconBlock represents a full block in the beacon chain.
+//
+// 按分叉换成不同的 SSZ 结构。ExecutionPayload 抽出里面的执行块，Electra 起还带上 execution requests。
 type BeaconBlock struct {
 	blockObj blockObject
 }
@@ -92,6 +94,8 @@ func (b *BeaconBlock) Slot() uint64 {
 }
 
 // ExecutionPayload parses and returns the execution payload of the block.
+//
+// 得到的是执行层的 types.Block。信标状态本身不在这个返回值里。
 func (b *BeaconBlock) ExecutionPayload() (*types.Block, error) {
 	switch obj := b.blockObj.(type) {
 	case *capella.BeaconBlock:

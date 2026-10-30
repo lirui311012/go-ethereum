@@ -37,6 +37,8 @@ var hasherPool = sync.Pool{
 }
 
 // Keccak256 calculates and returns the Keccak256 hash of the input data.
+//
+// 这是以太坊的 Legacy Keccak-256，和 NIST SHA3-256 的填充不同，两者结果不能互换。
 func Keccak256(data ...[]byte) []byte {
 	b := make([]byte, 32)
 	d := hasherPool.Get().(KeccakState)

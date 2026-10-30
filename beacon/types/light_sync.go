@@ -35,6 +35,8 @@ type HeadInfo struct {
 // BootstrapData contains a sync committee where light sync can be started,
 // together with a proof through a beacon header and corresponding state.
 // Note: BootstrapData is fetched from a server based on a known checkpoint hash.
+//
+// 轻同步的起点。委员会根要用 Merkle 证明连到这份信标头的状态根，对不上就拒绝。
 type BootstrapData struct {
 	Version         string
 	Header          Header
@@ -59,6 +61,8 @@ func (c *BootstrapData) Validate() error {
 //
 // See data structure definition here:
 // https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#lightclientupdate
+//
+// 用本周期委员会的签名证明下一周期的委员会根。可选的最终头让这笔更新更难被重组掉。
 type LightClientUpdate struct {
 	Version                 string
 	AttestedHeader          SignedHeader  // Arbitrary header out of the period signed by the sync committee
@@ -162,6 +166,8 @@ func (h *HeaderWithExecProof) Validate() error {
 //
 // See data structure definition here:
 // https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#lightclientoptimisticupdate
+//
+// 最新已签名头，还不一定最终。里面带执行载荷头的 Merkle 证明，用来确认执行块属于这个信标头。
 type OptimisticUpdate struct {
 	Attested HeaderWithExecProof
 	// Sync committee BLS signature aggregate

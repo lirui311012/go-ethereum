@@ -42,6 +42,9 @@ const ProtocolName = "eth"
 
 // ProtocolVersions are the supported versions of the `eth` protocol (first
 // is primary).
+//
+// eth/69 起消息号里还留着 NewBlock 和 NewBlockHashes，handler 不再分发它们。
+// 收到会落到 errInvalidMsgCode。新块从共识层经 eth/catalyst 进来。
 var ProtocolVersions = []uint{ETH72, ETH71, ETH70, ETH69}
 
 // protocolLengths are the number of implemented message corresponding to

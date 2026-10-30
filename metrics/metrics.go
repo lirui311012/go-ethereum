@@ -28,6 +28,8 @@ func Enabled() bool {
 //
 // Enable is not safe to call concurrently. You need to call this as early as possible in
 // the program, before any metrics collection will happen.
+//
+// 默认关闭。节点打开 metrics 时尽早调用一次，之后 Meter 的更新才会真正计算。
 func Enable() {
 	metricsEnabled = true
 	startMeterTickerLoop()

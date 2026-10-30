@@ -65,6 +65,8 @@ var (
 //
 // The DecodeRLP method should read one value from the given Stream. It is not forbidden to
 // read less or more, but it might be confusing.
+//
+// 自定义解码或私有字段走这里。否则按 Go 类型反射。
 type Decoder interface {
 	DecodeRLP(*Stream) error
 }

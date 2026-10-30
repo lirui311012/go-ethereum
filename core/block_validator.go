@@ -48,6 +48,8 @@ func NewBlockValidator(config *params.ChainConfig, blockchain *BlockChain) *Bloc
 // ValidateBody validates the given block's uncles and verifies the block
 // header's transaction and uncle roots. The headers are assumed to be already
 // validated at this point.
+//
+// 头已经校验过。这里核对叔块、交易根、提款根是否和 body 一致。
 func (v *BlockValidator) ValidateBody(block *types.Block) error {
 	// check EIP 7934 RLP-encoded block size cap
 	if v.config.IsOsaka(block.Number(), block.Time()) && block.Size() > params.MaxBlockSize {
@@ -145,6 +147,8 @@ func (v *BlockValidator) ValidateBody(block *types.Block) error {
 
 // ValidateState validates the various changes that happen after a state transition,
 // such as amount of used gas, the receipt roots and the state root itself.
+//
+// 用 IntermediateRoot 对状态根。Commit 在这一步通过之后。
 func (v *BlockValidator) ValidateState(block *types.Block, statedb *state.StateDB, res *ProcessResult, stateless bool) error {
 	if res == nil {
 		return errors.New("nil ProcessResult value")

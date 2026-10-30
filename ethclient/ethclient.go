@@ -15,6 +15,8 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package ethclient provides a client for the Ethereum RPC API.
+//
+// 类型化的 JSON-RPC 封装。请求经 rpc.Client 发到已经在跑的节点，查状态和执行调用都发生在节点进程里。
 package ethclient
 
 import (
@@ -33,11 +35,15 @@ import (
 )
 
 // Client defines typed wrappers for the Ethereum RPC API.
+//
+// 内部持有 *rpc.Client。Dial 接受 http、ws、ipc。订阅要走 websocket 或 IPC，HTTP 没有服务端推送。
 type Client struct {
 	c *rpc.Client
 }
 
 // Dial connects a client to the given URL.
+//
+// 转到 DialContext，再由 rpc.DialContext 按 URL 方案建连接。
 func Dial(rawurl string) (*Client, error) {
 	return DialContext(context.Background(), rawurl)
 }
@@ -52,6 +58,8 @@ func DialContext(ctx context.Context, rawurl string) (*Client, error) {
 }
 
 // NewClient creates a client that uses the given RPC client.
+//
+// 连接已经存在时用这个。模拟后端把 node.Attach 得到的客户端传进来。
 func NewClient(c *rpc.Client) *Client {
 	return &Client{c}
 }
@@ -82,6 +90,8 @@ func (ec *Client) ChainID(ctx context.Context) (*big.Int, error) {
 //
 // Note that loading full blocks requires two requests. Use HeaderByHash
 // if you don't need all transactions or uncle headers.
+//
+// 有叔块时，getBlock 会再发一批 eth_getUncleByBlockHashAndIndex。只要头用 HeaderByHash。
 func (ec *Client) BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error) {
 	return ec.getBlock(ctx, "eth_getBlockByHash", hash, true)
 }
@@ -103,6 +113,8 @@ func (ec *Client) BlockByHash(ctx context.Context, hash common.Hash) (*types.Blo
 // ```go
 // BlockByNumber(context.Background(), big.NewInt(int64(rpc.LatestBlockNumber)))
 // ```
+//
+// nil 经 toBlockNumArg 变成标签 latest。查某一高度时把那个 *big.Int 传进来。
 func (ec *Client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
 	return ec.getBlock(ctx, "eth_getBlockByNumber", toBlockNumArg(number), true)
 }
@@ -394,6 +406,8 @@ func (ec *Client) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, err
 
 // SubscribeNewHead subscribes to notifications about the current blockchain head
 // on the given channel.
+//
+// 走 eth_subscribe newHeads。HTTP 连接会失败。断线从返回订阅的 Err 读取。
 func (ec *Client) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error) {
 	sub, err := ec.c.EthSubscribe(ctx, ch, "newHeads")
 	if err != nil {
@@ -422,6 +436,8 @@ func (ec *Client) NetworkID(ctx context.Context) (*big.Int, error) {
 
 // BalanceAt returns the wei balance of the given account.
 // The block number can be nil, in which case the balance is taken from the latest known block.
+//
+// 对应 eth_getBalance。按区块哈希查用 BalanceAtHash，StorageAt 和 NonceAt 也是同一对分法。
 func (ec *Client) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
 	var result hexutil.Big
 	err := ec.c.CallContext(ctx, &result, "eth_getBalance", account, toBlockNumArg(blockNumber))
@@ -494,6 +510,8 @@ func (ec *Client) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]typ
 }
 
 // SubscribeFilterLogs subscribes to the results of a streaming filter query.
+//
+// 和 SubscribeNewHead 一样要求 websocket 或 IPC。一次性历史查询走 FilterLogs。
 func (ec *Client) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
 	arg, err := toFilterArg(q)
 	if err != nil {
@@ -562,6 +580,8 @@ func (ec *Client) PendingCodeAt(ctx context.Context, account common.Address) ([]
 
 // PendingNonceAt returns the account nonce of the given account in the pending state.
 // This is the nonce that should be used for the next transaction.
+//
+// 区块标签固定为 pending，会计入已进交易池、尚未上链的交易。
 func (ec *Client) PendingNonceAt(ctx context.Context, account common.Address) (uint64, error) {
 	var result hexutil.Uint64
 	err := ec.c.CallContext(ctx, &result, "eth_getTransactionCount", account, "pending")
@@ -583,6 +603,8 @@ func (ec *Client) PendingTransactionCount(ctx context.Context) (uint, error) {
 // blockNumber selects the block height at which the call runs. It can be nil, in which
 // case the code is taken from the latest known block. Note that state from very old
 // blocks might not be available.
+//
+// 对应 eth_call。节点在选定高度上试跑，交易不进池，链上状态保持原样。
 func (ec *Client) CallContract(ctx context.Context, msg ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	var hex hexutil.Bytes
 	err := ec.c.CallContext(ctx, &hex, "eth_call", toCallArg(msg), toBlockNumArg(blockNumber))
@@ -683,6 +705,8 @@ func (ec *Client) FeeHistory(ctx context.Context, blockCount uint64, lastBlock *
 // Note that the state used by this method is implementation-defined by the remote RPC
 // server, but it's reasonable to assume that it will either be the pending or latest
 // state.
+//
+// 对应 eth_estimateGas。数字来自节点当时的试跑，随后进入区块的交易仍可能让实际消耗变化。
 func (ec *Client) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (uint64, error) {
 	var hex hexutil.Uint64
 	err := ec.c.CallContext(ctx, &hex, "eth_estimateGas", toCallArg(msg))
@@ -718,6 +742,8 @@ func (ec *Client) EstimateGasAtBlockHash(ctx context.Context, msg ethereum.CallM
 //
 // If the transaction was a contract creation use the TransactionReceipt method to get the
 // contract address after the transaction has been mined.
+//
+// 调用前要完成签名。这里 MarshalBinary 后交给 eth_sendRawTransaction，私钥不进这个包。
 func (ec *Client) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	data, err := tx.MarshalBinary()
 	if err != nil {
@@ -778,6 +804,10 @@ func RevertErrorData(err error) ([]byte, bool) {
 	return nil, false
 }
 
+// toBlockNumArg maps a Go block number onto an eth_ RPC argument.
+// nil becomes the tag latest. A negative value that fits in int64 becomes a tag such as pending.
+//
+// BlockByNumber、BalanceAt、CallContract 都经这里。nil 一定是 latest。
 func toBlockNumArg(number *big.Int) string {
 	if number == nil {
 		return "latest"

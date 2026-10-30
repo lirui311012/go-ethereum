@@ -130,6 +130,8 @@ func (m *MetaData) ParseABI() (*abi.ABI, error) {
 // BoundContract is the base wrapper object that reflects a contract on the
 // Ethereum network. It contains a collection of methods that are used by the
 // higher level contract bindings to operate.
+//
+// abigen v2 生成的包装最终调到这里。Call 走 eth_call，不进交易池。Transact 才打包并签名发送。
 type BoundContract struct {
 	address    common.Address     // Deployment address of the contract on the Ethereum blockchain
 	abi        abi.ABI            // Reflect based ABI to access the correct Ethereum methods
@@ -253,6 +255,8 @@ func (c *BoundContract) call(opts *CallOpts, input []byte) ([]byte, error) {
 }
 
 // Transact invokes the (paid) contract method with params as input values.
+//
+// 先 ABI.Pack（已含选择器），再交给 TransactOpts.Signer 签名。本文件不保存私钥。
 func (c *BoundContract) Transact(opts *TransactOpts, method string, params ...any) (*types.Transaction, error) {
 	// Otherwise pack up the parameters and invoke the contract
 	input, err := c.abi.Pack(method, params...)

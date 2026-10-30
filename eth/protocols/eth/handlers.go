@@ -565,7 +565,8 @@ func dispatchReceipts(requestId uint64, receiptLists []*ReceiptList, peer *Peer)
 
 func handleNewPooledTransactionHashes(backend Backend, msg Decoder, peer *Peer) error {
 	// New transaction announcement arrived, make sure we have
-	// a valid and fresh chain to handle them
+	// a valid and fresh chain to handle them.
+	// synced 之前 AcceptTxs 为假，公告在这里丢掉。交易体和旧式广播走同一判断。
 	if !backend.AcceptTxs() {
 		return nil
 	}

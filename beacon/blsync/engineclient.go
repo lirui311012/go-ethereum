@@ -32,6 +32,8 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
+// engineClient 把跟到的信标头翻译成 engine_newPayload 和 engine_forkchoiceUpdated。
+// rpc 为空时只打日志，不推执行层。safe 和 finalized 都用事件里的最终头。
 type engineClient struct {
 	config     *params.ClientConfig
 	rpc        *rpc.Client

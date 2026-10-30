@@ -27,6 +27,8 @@ encodes as "0x".
 
 Integers are encoded using the least amount of digits (no leading zero digits). Their
 encoding may be of uneven length. The number zero encodes as "0x0".
+
+JSON-RPC 的 0x 字符串走这里。区块和交易在磁盘上的二进制走 rlp，不走本包。
 */
 package hexutil
 
@@ -56,6 +58,8 @@ type decError struct{ msg string }
 func (err decError) Error() string { return err.msg }
 
 // Decode decodes a hex string with 0x prefix.
+//
+// 没有 0x 返回 ErrMissingPrefix。字节切片必须偶数长度。数量（Uint64、Big）允许奇数，但禁止前导零。
 func Decode(input string) ([]byte, error) {
 	if len(input) == 0 {
 		return nil, ErrEmptyString

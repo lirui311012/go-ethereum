@@ -43,6 +43,9 @@ const selfDeriveThrottling = time.Second
 
 // driver defines the vendor specific functionality hardware wallets instances
 // must implement to allow using them with the wallet lifecycle management.
+//
+// wallet 管生命周期和自派生。真正的 APDU 或 protobuf 在 ledger.go、trezor.go。
+// SignTx 会等到用户在设备上确认。
 type driver interface {
 	// Status returns a textual status to aid the user in the current state of the
 	// wallet. It also returns an error indicating any failure the wallet might have

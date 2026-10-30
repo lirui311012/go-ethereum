@@ -15,6 +15,8 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package gethclient provides an RPC client for geth-specific APIs.
+//
+// 这些方法走 geth 私有命名空间。标准 eth_ 调用在 ethclient.Client。换一个执行客户端时，这里的方法可能不存在。
 package gethclient
 
 import (
@@ -82,6 +84,8 @@ type StorageResult struct {
 
 // GetProof returns the account and storage values of the specified account including the Merkle-proof.
 // The block number can be nil, in which case the value is taken from the latest known block.
+//
+// 对应 eth_getProof。Merkle 证明由节点按该高度的状态树生成，这里只解码。
 func (ec *Client) GetProof(ctx context.Context, account common.Address, keys []string, blockNumber *big.Int) (*AccountResult, error) {
 	type storageResult struct {
 		Key   string       `json:"key"`

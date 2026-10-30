@@ -243,6 +243,8 @@ func (api *ConsensusAPI) ForkchoiceUpdatedV4(ctx context.Context, update engine.
 	return api.forkchoiceUpdated(ctx, update, params, engine.PayloadV4, false)
 }
 
+// 共识层用它宣布链头。本地没有完整块时，已判无效则 INVALID；GetHeader 失败则只返回 SYNCING；拿到 header 才 BeaconSync 并返回 SYNCING。
+// 本地有块才 SetCanonical。带 payloadAttributes 时才开始组下一块，GetPayload 只是来取。
 func (api *ConsensusAPI) forkchoiceUpdated(ctx context.Context, update engine.ForkchoiceStateV1, payloadAttributes *engine.PayloadAttributes, payloadVersion engine.PayloadVersion, payloadWitness bool) (result engine.ForkChoiceResponse, err error) {
 	ctx, _, spanEnd := telemetry.StartSpan(ctx, "engine.forkchoiceUpdated")
 	defer spanEnd(&err)
@@ -295,6 +297,7 @@ func (api *ConsensusAPI) forkchoiceUpdated(ctx context.Context, update engine.Fo
 			}
 		}
 		log.Info("Forkchoice requested sync to new head", context...)
+		// 缺块时只触发同步，不在这里执行。规范头要等块到了之后的下一次调用。
 		if err := api.eth.Downloader().BeaconSync(header, finalized); err != nil {
 			return engine.STATUS_SYNCING, err
 		}
@@ -521,6 +524,9 @@ func (api *ConsensusAPI) GetPayloadV6(payloadID engine.PayloadID) (*engine.Execu
 
 // getPayload will retrieve the specified payload and verify it conforms to the
 // endpoint's allowed payload versions and forks.
+//
+// 不建块。块在带 payloadAttributes 的 forkchoiceUpdated 里已经开始组。
+// 有完整块就交完整块，否则交已经同步造好的空块。Resolve 会停掉后台构建。
 //
 // Note passing nil `forks`, `versions` disables the respective check.
 func (api *ConsensusAPI) getPayload(payloadID engine.PayloadID, full bool, versions []engine.PayloadVersion, forks []forks.Fork) (*engine.ExecutionPayloadEnvelope, error) {
@@ -891,6 +897,8 @@ func (api *ConsensusAPI) NewPayloadV5(ctx context.Context, params engine.Executa
 	return api.newPayload(ctx, params, versionedHashes, beaconRoot, requests, false)
 }
 
+// 执行共识层送来的块并落库。成功只表示 VALID，不表示它已经是链头。
+// 链头要等随后的 forkchoiceUpdated 调用 SetCanonical。
 func (api *ConsensusAPI) newPayload(ctx context.Context, params engine.ExecutableData, versionedHashes []common.Hash, beaconRoot *common.Hash, requests [][]byte, witness bool) (result engine.PayloadStatusV1, err error) {
 	// The locking here is, strictly, not required. Without these locks, this can happen:
 	//

@@ -146,6 +146,8 @@ type generateParams struct {
 }
 
 // generateWork generates a sealing block based on the given parameters.
+//
+// 在内存里准备头、按价格装交易、再 Finalize。得到的块不写链头，交给共识层。
 func (miner *Miner) generateWork(ctx context.Context, genParam *generateParams, witness bool) (result *newPayloadResult) {
 	ctx, span, spanEnd := telemetry.StartSpan(ctx, "miner.generateWork")
 	defer func() {
@@ -263,6 +265,8 @@ func (miner *Miner) generateWork(ctx context.Context, genParam *generateParams, 
 // prepareWork constructs the sealing task according to the given parameters,
 // either based on the last chain head or specified parent. In this function
 // the pending transactions are not filled yet, only the empty task returned.
+//
+// 从父状态算 gas limit 和 base fee。PoS 下 engine.Prepare 把 difficulty 写成 0。交易还没装进来。
 func (miner *Miner) prepareWork(ctx context.Context, genParams *generateParams, witness bool) (result *environment, err error) {
 	_, _, spanEnd := telemetry.StartSpan(ctx, "miner.prepareWork")
 	defer spanEnd(&err)
@@ -581,6 +585,9 @@ func (miner *Miner) commitTransactions(ctx context.Context, env *environment, pl
 // fillTransactions retrieves the pending transactions from the txpool and fills them
 // into the given sealing block. The transaction selection and ordering strategy can
 // be customized with the plugin in the future.
+//
+// 先取普通交易，再取 blob 交易。本地优先地址先打包，其余按有效 tip 交叉选取。
+// 执行失败会回滚该笔状态和 gas pool。ErrNonceTooLow 继续同一账户的后续 nonce，其它错误才跳过该账户。放进区块的 blob 交易不含 sidecar。
 func (miner *Miner) fillTransactions(ctx context.Context, interrupt *atomic.Int32, env *environment) (err error) {
 	ctx, span, spanEnd := telemetry.StartSpan(ctx, "miner.fillTransactions")
 	defer spanEnd(&err)

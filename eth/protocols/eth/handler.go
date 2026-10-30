@@ -127,6 +127,8 @@ type TxPool interface {
 }
 
 // MakeProtocols constructs the P2P protocol definitions for `eth`.
+//
+// 链数据、交易公告走这里。状态叶子走 snap。两条协议共用一条 TCP。
 func MakeProtocols(backend Backend, network uint64, disc enode.Iterator) []p2p.Protocol {
 	protocols := make([]p2p.Protocol, 0, len(ProtocolVersions))
 	for _, version := range ProtocolVersions {

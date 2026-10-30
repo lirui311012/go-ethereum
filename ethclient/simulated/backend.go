@@ -62,6 +62,9 @@ type simClient struct {
 
 // Backend is a simulated blockchain. You can use it to test your contracts or
 // other code that interacts with the Ethereum chain.
+//
+// 进程内启动 node.Node 和 eth.Ethereum，出块交给 catalyst.SimulatedBeacon。
+// 返回的 Client 是 ethclient 的一个子集，SimulateV1 这类方法不在上面。
 type Backend struct {
 	node   *node.Node
 	beacon *catalyst.SimulatedBeacon
@@ -72,6 +75,8 @@ type Backend struct {
 // contract bindings in unit tests.
 //
 // A simulated backend always uses chainID 1337.
+//
+// DataDir 为空，链数据留在内存。测试里要调用 Commit 才会封出下一块。
 func NewBackend(alloc types.GenesisAlloc, options ...func(nodeConf *node.Config, ethConf *ethconfig.Config)) *Backend {
 	// Create the default configurations for the outer node shell and the Ethereum
 	// service to mutate with the options afterwards
@@ -164,6 +169,8 @@ func (n *Backend) Close() error {
 }
 
 // Commit seals a block and moves the chain forward to a new empty block.
+//
+// 转到 SimulatedBeacon.Commit。尚未 Commit 的交易留在待打包状态。
 func (n *Backend) Commit() common.Hash {
 	return n.beacon.Commit()
 }
@@ -196,6 +203,8 @@ func (n *Backend) AdjustTime(adjustment time.Duration) error {
 }
 
 // Client returns a client that accesses the simulated chain.
+//
+// 底层是 stack.Attach，RPC 留在本进程。返回的接口藏住了 *ethclient.Client。
 func (n *Backend) Client() Client {
 	return n.client
 }

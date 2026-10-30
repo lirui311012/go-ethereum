@@ -30,6 +30,11 @@ const (
 
 // These variables are set at build-time by the linker when the build is
 // done by build/ci.go.
+//
+// build/ci.go 的 buildFlags 在 env.Commit 非空时写进 -ldflags：
+// -X .../internal/version.gitCommit=<hash> 和 gitDate=<YYYYMMDD>。
+// hash 来自 CI 的提交 SHA，或本地 .git/HEAD，也可用 -git-commit 覆盖。
+// 日期是 git show -s --format=%ct 转成的 YYYYMMDD。普通 go build 不写这两个变量。
 var gitCommit, gitDate string
 
 // VCSInfo represents the git repository state.
@@ -40,6 +45,9 @@ type VCSInfo struct {
 }
 
 // VCS returns version control information of the current executable.
+//
+// 优先用 build/ci.go 链接进去的 gitCommit、gitDate。那条路径不带 Dirty。
+// 没有链接信息时，只在本模块是主模块时读 Go 嵌入的 vcs.*。
 func VCS() (VCSInfo, bool) {
 	if gitCommit != "" {
 		// Use information set by the build script if present.
@@ -54,6 +62,8 @@ func VCS() (VCSInfo, bool) {
 }
 
 // buildInfoVCS returns VCS information of the build.
+//
+// commit 和日期都要有才算成功。日期解析失败时整段丢弃。Dirty 只在 vcs.modified 为 true 时置位。
 func buildInfoVCS(info *debug.BuildInfo) (s VCSInfo, ok bool) {
 	for _, v := range info.Settings {
 		switch v.Key {

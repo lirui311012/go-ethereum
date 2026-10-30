@@ -132,6 +132,8 @@ func (d *Downloader) SetBadBlockCallback(onBadBlock badBlockFn) {
 //
 // Internally backfilling and state sync is done the same way, but the header
 // retrieval and scheduling is replaced.
+//
+// 从共识层给的可信头向后拉 header。不向对端要总难度最高的头。
 func (d *Downloader) BeaconSync(head *types.Header, final *types.Header) error {
 	return d.beaconSync(head, final, true)
 }

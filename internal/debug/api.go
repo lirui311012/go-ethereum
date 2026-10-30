@@ -18,6 +18,8 @@
 // This package is mostly glue code making these facilities available
 // through the CLI and RPC subsystem. If you want to use them from Go code,
 // use package runtime instead.
+//
+// pprof 和运行时诊断从这里接到 CLI 与 RPC。链的执行和存储不经过这个包。
 package debug
 
 import (

@@ -52,6 +52,8 @@ type ReadAtSeekCloser interface {
 }
 
 // Iterator provides sequential access to blocks in an era file.
+//
+// Era1 里的历史区块按顺序读出。导入旧历史时用，不参与出块。
 type Iterator interface {
 	// Next advances to the next block. Returns true if a block is available,
 	// false when iteration is complete or an error occurred.

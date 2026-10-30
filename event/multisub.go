@@ -18,6 +18,9 @@ package event
 
 // JoinSubscriptions joins multiple subscriptions to be able to track them as
 // one entity and collectively cancel them or consume any errors from them.
+//
+// 任一内部订阅出错，合成的订阅就结束，并 Unsubscribe 其余的。
+// 调用方 Unsubscribe 时，各个内部订阅一并取消。
 func JoinSubscriptions(subs ...Subscription) Subscription {
 	return NewSubscription(func(unsubbed <-chan struct{}) error {
 		// Unsubscribe all subscriptions before returning

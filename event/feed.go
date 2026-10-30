@@ -32,6 +32,10 @@ var errBadChannel = errors.New("event: Subscribe argument does not have sendable
 // match.
 //
 // The zero value is ready to use.
+//
+// 第一次 Subscribe 或 Send 定下元素类型，之后类型不一致会 panic。
+// core.BlockChain 用它发链头、日志和删块。eth/filters 订这些 feed，再经 rpc 推给 eth_subscribe。
+// 交易池也用 feed 通知新交易，eth 的 txBroadcastLoop 订的就是它。
 type Feed struct {
 	once      sync.Once        // ensures that init only runs once
 	sendLock  chan struct{}    // sendLock has a one-element buffer and is empty when held.It protects sendCases.
@@ -70,6 +74,9 @@ func (f *Feed) init(etype reflect.Type) {
 //
 // The channel should have ample buffer space to avoid blocking other subscribers.
 // Slow subscribers are not dropped.
+//
+// 新 channel 先放进 inbox，下一次 Send 才并进发送集合。
+// channel 要有缓冲。满了的话这次 Send 会一直等到能写进去，或等到 Unsubscribe。
 func (f *Feed) Subscribe(channel interface{}) Subscription {
 	chanval := reflect.ValueOf(channel)
 	chantyp := chanval.Type()
@@ -117,6 +124,9 @@ func (f *Feed) remove(sub *feedSub) {
 
 // Send delivers to all subscribed channels simultaneously.
 // It returns the number of subscribers that the value was sent to.
+//
+// 不丢弃慢订阅者。先 TrySend，写不进的留在 select 里等。
+// 同一时刻只有一个 Send 在跑。返回值是这次实际写进去的订阅者个数。
 func (f *Feed) Send(value interface{}) (nsent int) {
 	rvalue := reflect.ValueOf(value)
 

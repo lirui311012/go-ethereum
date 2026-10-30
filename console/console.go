@@ -68,6 +68,9 @@ type Config struct {
 // Console is a JavaScript interpreted runtime environment. It is a fully fledged
 // JavaScript console attached to a running node via an external or in-process RPC
 // client.
+//
+// 挂在 rpc.Client 上的 JS 环境。geth console 用进程内 Attach，geth attach 拨 IPC。
+// 链不在这里跑。
 type Console struct {
 	client   *rpc.Client         // RPC client to execute Ethereum requests through
 	jsre     *jsre.JSRE          // JavaScript runtime environment running the interpreter
@@ -87,6 +90,8 @@ type Console struct {
 
 // New initializes a JavaScript interpreted runtime environment and sets defaults
 // with the config struct.
+//
+// init 里建 bridge，按节点暴露的模块装上 web3。请求经 RPC 发出。
 func New(config Config) (*Console, error) {
 	// Handle unset config values gracefully
 	if config.Prompter == nil {

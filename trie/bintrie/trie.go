@@ -106,6 +106,8 @@ func ChunkifyCode(code []byte) ChunkedCode {
 }
 
 // BinaryTrie is the implementation of https://eips.ethereum.org/EIPS/eip-7864.
+//
+// 账户、存储槽和代码块在同一棵树上。树键和节点哈希用 SHA-256。UBTDatabase.OpenStorageTrie 返回调用方传入的这棵统一树。
 type BinaryTrie struct {
 	store      *nodeStore
 	reader     *trie.Reader
@@ -344,6 +346,8 @@ func (t *BinaryTrie) Hash() common.Hash {
 
 // Commit writes all nodes to the trie's memory database, tracking the internal
 // and external (for account tries) references.
+//
+// 只把脏节点收进 NodeSet。刷盘仍在 pathdb。
 func (t *BinaryTrie) Commit(_ bool) (common.Hash, *trienode.NodeSet) {
 	nodeset := trienode.NewNodeSet(common.Hash{})
 

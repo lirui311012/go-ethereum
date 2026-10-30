@@ -24,6 +24,8 @@ import (
 
 // VerifyGaslimit verifies the header gas limit according increase/decrease
 // in relation to the parent gas limit.
+//
+// 与父块的差必须小于 parent/GasLimitBoundDivisor，且不低于 MinGasLimit。
 func VerifyGaslimit(parentGasLimit, headerGasLimit uint64) error {
 	// Verify that the gas limit remains within allowed bounds
 	diff := int64(parentGasLimit) - int64(headerGasLimit)

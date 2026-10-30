@@ -220,6 +220,8 @@ func (t *StateTest) checkError(subtest StateSubtest, err error) error {
 }
 
 // Run executes a specific subtest and verifies the post-state and logs
+//
+// 用 genesis 建初始状态再执行交易，只比对状态根和日志哈希。这条路径走 ApplyMessage，不建 BlockChain，也不比对 gas。
 func (t *StateTest) Run(subtest StateSubtest, vmconfig vm.Config, snapshotter bool, scheme string, postCheck func(err error, st *StateTestState)) (result error) {
 	st, root, _, err := t.RunNoVerify(subtest, vmconfig, snapshotter, scheme)
 	// Invoke the callback at the end of function for further analysis.

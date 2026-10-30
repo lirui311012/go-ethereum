@@ -16,6 +16,8 @@
 
 // Package bind is the runtime for abigen v1 generated contract bindings.
 // Deprecated: please use github.com/ethereum/go-ethereum/bind/v2
+//
+// 新代码用 accounts/abi/bind/v2。这里留下是为了还能编译旧的生成结果。
 package bind
 
 import (

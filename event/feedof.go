@@ -25,6 +25,9 @@ import (
 // Values sent to a Feed are delivered to all subscribed channels simultaneously.
 //
 // The zero value is ready to use.
+//
+// 和 Feed 同一套发送。channel 类型是 chan<- T，类型在编译期固定。
+// 慢订阅者同样不会被丢掉，缓冲要加在订阅方的 channel 上。
 type FeedOf[T any] struct {
 	once      sync.Once     // ensures that init only runs once
 	sendLock  chan struct{} // sendLock has a one-element buffer and is empty when held.It protects sendCases.

@@ -28,6 +28,8 @@ import (
 // ShutdownTracker is a service that reports previous unclean shutdowns
 // upon start. It needs to be started after a successful start-up and stopped
 // after a successful shutdown, just before the db is closed.
+//
+// 标记写在链数据库里。Start 放在节点起来之后，Stop 放在关库之前。
 type ShutdownTracker struct {
 	db     ethdb.Database
 	stopCh chan struct{}

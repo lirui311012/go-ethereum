@@ -15,6 +15,9 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package event deals with subscriptions to real-time events.
+//
+// 只在本进程里把值发给多个 channel。链头、日志、交易池更新走这里。
+// 跨节点广播在 p2p 和 eth。新代码用 Feed 或 FeedOf，TypeMux 已废弃。
 package event
 
 import (
@@ -38,6 +41,9 @@ type TypeMuxEvent struct {
 // The zero value is ready to use.
 //
 // Deprecated: use Feed
+//
+// 按 reflect 类型分发。Stop 之后再 Post 得到 ErrMuxClosed。
+// 新订阅收不到 Subscribe 之前已经发出去的事件。
 type TypeMux struct {
 	mutex   sync.RWMutex
 	subm    map[reflect.Type][]*TypeMuxSubscription
@@ -80,6 +86,9 @@ func (mux *TypeMux) Subscribe(types ...interface{}) *TypeMuxSubscription {
 
 // Post sends an event to all receivers registered for the given type.
 // It returns ErrMuxClosed if the mux has been stopped.
+//
+// 只投给已经按这个具体类型 Subscribe 的接收者。
+// 接收 channel 没有缓冲，慢的一方会挡住这次 Post，直到写入或对方关闭。
 func (mux *TypeMux) Post(ev interface{}) error {
 	event := &TypeMuxEvent{
 		Time: time.Now(),
@@ -145,6 +154,9 @@ func posdelete(slice []*TypeMuxSubscription, pos int) []*TypeMuxSubscription {
 }
 
 // TypeMuxSubscription is a subscription established through TypeMux.
+//
+// Chan 是无缓冲的。Unsubscribe 会把它关掉。
+// deliver 会丢掉订阅创建时间之前的事件，所以不会补发。
 type TypeMuxSubscription struct {
 	mux     *TypeMux
 	created time.Time

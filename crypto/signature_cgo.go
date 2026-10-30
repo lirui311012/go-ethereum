@@ -50,6 +50,8 @@ func SigToPub(hash, sig []byte) (*ecdsa.PublicKey, error) {
 // solution is to hash any input before calculating the signature.
 //
 // The produced signature is in the [R || S || V] format where V is 0 or 1.
+//
+// 传入的必须已经是 32 字节摘要，函数内部不再 keccak。输出 65 字节，V 是 0 或 1。
 func Sign(digestHash []byte, prv *ecdsa.PrivateKey) (sig []byte, err error) {
 	if len(digestHash) != DigestLength {
 		return nil, fmt.Errorf("hash is required to be exactly %d bytes (%d)", DigestLength, len(digestHash))
@@ -62,6 +64,8 @@ func Sign(digestHash []byte, prv *ecdsa.PrivateKey) (sig []byte, err error) {
 // VerifySignature checks that the given public key created signature over digest.
 // The public key should be in compressed (33 bytes) or uncompressed (65 bytes) format.
 // The signature should have the 64 byte [R || S] format.
+//
+// 不含 V。恢复公钥用 Ecrecover，它要 65 字节签名。
 func VerifySignature(pubkey, digestHash, signature []byte) bool {
 	return secp256k1.VerifySignature(pubkey, digestHash, signature)
 }

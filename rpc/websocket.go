@@ -47,6 +47,8 @@ var wsBufferPool = new(sync.Pool)
 //
 // allowedOrigins should be a comma-separated list of allowed origin URLs.
 // To allow connections with any origin, pass "*".
+//
+// 升级成长连接后交给 ServeCodec。订阅在这条路径上是允许的。
 func (s *Server) WebsocketHandler(allowedOrigins []string) http.Handler {
 	var upgrader = websocket.Upgrader{
 		ReadBufferSize:  wsReadBuffer,

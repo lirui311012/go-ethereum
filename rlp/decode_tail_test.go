@@ -26,6 +26,7 @@ type structWithTail struct {
 	C    []uint `rlp:"tail"`
 }
 
+// Done
 func ExampleDecode_structTagTail() {
 	// In this example, the "tail" struct tag is used to decode lists of
 	// differing length into a struct.

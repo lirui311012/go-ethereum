@@ -78,6 +78,9 @@ func isKeyWord(arg string) bool {
 // to be used as is in client code, but rather as an intermediate struct which
 // enforces compile time type safety and naming convention as opposed to having to
 // manually maintain hard coded strings that break on runtime.
+//
+// v1 生成器。模板是 source.go.tpl，由 template.go 嵌入。运行时 accounts/abi/bind 已标废弃。
+// cmd/abigen 默认走这条。产物写到 --out 或标准输出，不进本仓库。
 func Bind(types []string, abis []string, bytecodes []string, fsigs []map[string]string, pkg string, libs map[string]string, aliases map[string]string) (string, error) {
 	var (
 		// contracts is the map of each individual contract requested binding

@@ -91,6 +91,8 @@ func latestBlobConfig(cfg *params.ChainConfig, time uint64) (BlobConfig, error) 
 // VerifyEIP4844Header verifies the presence of the excessBlobGas field and that
 // if the current block contains no transactions, the excessBlobGas is updated
 // accordingly.
+//
+// 头上必须有 ExcessBlobGas 和 BlobGasUsed。用量不超过当时的 blob 配置，excess 必须等于算出来的值。
 func VerifyEIP4844Header(config *params.ChainConfig, parent, header *types.Header) error {
 	if header.Number.Uint64() != parent.Number.Uint64()+1 {
 		panic("bad header pair")
@@ -126,6 +128,8 @@ func VerifyEIP4844Header(config *params.ChainConfig, parent, header *types.Heade
 
 // CalcExcessBlobGas calculates the excess blob gas after applying the set of
 // blobs on top of the excess blob gas.
+//
+// 由父块的 excess 和 blob gas 用量得到下一块的 excess。Osaka 的算法在 calcExcessBlobGas 里分叉。
 func CalcExcessBlobGas(config *params.ChainConfig, parent *types.Header, headTimestamp uint64) uint64 {
 	isOsaka := config.IsOsaka(config.LondonBlock, headTimestamp)
 	bcfg, err := latestBlobConfig(config, headTimestamp)
@@ -169,6 +173,8 @@ func calcExcessBlobGas(isOsaka bool, bcfg BlobConfig, parent *types.Header) uint
 }
 
 // CalcBlobFee calculates the blobfee from the header's excess blob gas field.
+//
+// 用 excess 做伪指数，得到 blob base fee。组块和校验共用这一套数。
 func CalcBlobFee(config *params.ChainConfig, header *types.Header) *big.Int {
 	blobConfig, err := latestBlobConfig(config, header.Time)
 	if err != nil {

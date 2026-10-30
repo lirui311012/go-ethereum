@@ -323,6 +323,9 @@ func (p *TxPool) GetMetadata(hash common.Hash) *TxMetadata {
 //
 // Note, if sync is set the method will block until all internal maintenance
 // related to the add is finished. Only use this during tests for determinism.
+//
+// 按 Filter 拆开：普通交易进 legacypool，blob 进 blobpool。两边都不收的类型记 ErrTxTypeNotSupported。
+// 进池还不执行、不扣 gas。执行发生在组块或 InsertChain。
 func (p *TxPool) Add(txs []*types.Transaction, sync bool) []error {
 	// Split the input transactions between the subpools. It shouldn't really
 	// happen that we receive merged batches, but better graceful than strange

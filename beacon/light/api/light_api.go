@@ -105,6 +105,8 @@ type fetcher interface {
 
 // BeaconLightApi requests light client information from a beacon node REST API.
 // Note: all required API endpoints are currently only implemented by Lodestar.
+//
+// 向信标节点要轻客户端更新和信标块。拿到的头交给 CommitteeChain 验，不在这里写执行层。
 type BeaconLightApi struct {
 	url           string
 	client        fetcher

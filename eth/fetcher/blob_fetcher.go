@@ -165,6 +165,8 @@ type BlobFetcherFunctions struct {
 //     if a payload is received, it is added to the blob pool. Otherwise, the transaction is dropped.
 //   - Transactions to be fetched are moved to "fetching"
 //     if a payload/cell announcement is received during fetch, the peer is recorded as an alternate source.
+//
+// 收的是 cell 公告和 Cells 响应。eth72 的 blob 交易体进 txFetcher，由 BlobBuffer 拼齐 sidecar 后再进交易池。
 type BlobFetcher struct {
 	notify    chan *blobTxAnnounce
 	cleanup   chan *payloadDelivery

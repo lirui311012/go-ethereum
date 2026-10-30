@@ -53,6 +53,8 @@ const (
 )
 
 // Transaction is an Ethereum transaction.
+//
+// 外壳加 inner TxData。类型常量从 Legacy 0x00 到 SetCode 0x04。进块的 blob 交易不能带 sidecar。
 type Transaction struct {
 	inner TxData    // Consensus contents of a transaction
 	time  time.Time // Time first seen locally (spam avoidance)

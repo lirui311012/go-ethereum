@@ -63,6 +63,8 @@ func NewSecure(stateRoot common.Hash, owner common.Hash, root common.Hash, db da
 // the preimage of each key if preimage recording is enabled.
 //
 // StateTrie is not safe for concurrent use.
+//
+// 账户 key 是 keccak(address)，存储 key 是 keccak(slot)。开启 preimage 时，Commit 把原像放进 triedb 的内存表。
 type StateTrie struct {
 	trie        Trie
 	db          database.NodeDatabase
@@ -329,7 +331,9 @@ func (t *StateTrie) Witness() map[string][]byte {
 // The returned nodeset can be nil if the trie is clean (nothing to commit).
 // All cached preimages will be also flushed if preimages recording is enabled.
 // Once the trie is committed, it's not usable anymore. A new trie must
-// be created with new root and updated trie database for following usage
+// be created with new root and updated trie database for following usage.
+//
+// 开启 preimage 时，先把缓存里的原像放进 triedb 的内存表，再收集脏节点。提交之后这棵 trie 不能再改。
 func (t *StateTrie) Commit(collectLeaf bool) (common.Hash, *trienode.NodeSet) {
 	// Write all the pre-images to the actual disk database
 	if len(t.secKeyCache) > 0 {

@@ -588,6 +588,8 @@ func (c *Clique) Authorize(signer common.Address) {
 
 // Seal implements consensus.Engine, attempting to create a sealed block using
 // the local signing credentials.
+//
+// 生产路径不再用 PoA 封印。beacon 在预合并头上若调到这里会 panic。
 func (c *Clique) Seal(chain consensus.ChainHeaderReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error {
 	panic("clique (poa) sealing not supported any more")
 }

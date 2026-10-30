@@ -49,6 +49,8 @@ var ErrWalletClosed = errors.New("wallet closed")
 //
 // This usually means either that a password needs to be supplied, or perhaps a
 // one time PIN code displayed by some hardware device.
+//
+// keystore 的 ErrLocked 就是这个错误。调用方应改走 SignTxWithPassphrase，或先 Unlock。
 type AuthNeededError struct {
 	Needed string // Extra authentication the user needs to provide
 }

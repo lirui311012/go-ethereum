@@ -29,6 +29,9 @@ import (
 )
 
 // MakeTopics converts a filter query argument list into a filter topic set.
+//
+// indexed 的值类型直接放进 32 字节 topic。动态类型放的是值的 keccak，解不回原文。
+// topic0 是事件签名的 keccak，anonymous 事件没有这一项。
 func MakeTopics(query ...[]interface{}) ([][]common.Hash, error) {
 	topics := make([][]common.Hash, len(query))
 	for i, filter := range query {

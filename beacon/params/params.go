@@ -16,6 +16,9 @@
 
 package params
 
+// EpochLength 是 32 个 slot，给轻客户端校验用。
+// SyncPeriodLength 是 8192 个 slot，一个同步委员会服务这么久。
+// 超多数是委员会的 2/3。签名人数不到这个数，更新不算近似最终。
 const (
 	EpochLength      = 32
 	SyncPeriodLength = 8192

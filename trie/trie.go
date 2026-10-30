@@ -15,6 +15,8 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package trie implements Merkle Patricia Tries.
+//
+// Commit 只把脏节点收进内存里的 NodeSet。账户和存储的 key 哈希在 StateTrie。磁盘写入在 triedb。
 package trie
 
 import (
@@ -812,7 +814,9 @@ func (t *Trie) Hash() common.Hash {
 // collectLeaf is true) will be encapsulated into a nodeset for return.
 // The returned nodeset can be nil if the trie is clean (nothing to commit).
 // Once the trie is committed, it's not usable anymore. A new trie must
-// be created with new root and updated trie database for following usage
+// be created with new root and updated trie database for following usage.
+//
+// 返回的 NodeSet 还在内存里。交给 triedb.Update 之后，hash 方案进脏缓存，path 方案叠成 diff layer。
 func (t *Trie) Commit(collectLeaf bool) (common.Hash, *trienode.NodeSet) {
 	defer func() {
 		t.committed = true

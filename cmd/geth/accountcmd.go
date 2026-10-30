@@ -190,7 +190,9 @@ nodes.
 	}
 )
 
-// makeAccountManager creates an account manager with backends
+// makeAccountManager creates an account manager with backends.
+//
+// 直接操作 keystore，不经过 node.Node。没有数据目录时拒绝使用临时 keystore。
 func makeAccountManager(ctx *cli.Context) *accounts.Manager {
 	cfg := loadBaseConfig(ctx)
 	am := accounts.NewManager(nil)

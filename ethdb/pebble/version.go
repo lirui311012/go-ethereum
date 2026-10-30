@@ -65,6 +65,8 @@ func PeekFormatVersion(file string) (bool, uint64, error) {
 
 // NeedsV1 returns true if the database at the given path requires pebble v1
 // to open (format version too old for pebble v2).
+//
+// 空目录或读格式失败时返回 false，调用方随之使用 v2。node/database.go 在打开链库前调用这里。
 func NeedsV1(file string) bool {
 	exists, ver, err := PeekFormatVersion(file)
 	if err != nil || !exists {
@@ -80,6 +82,8 @@ func NeedsV1(file string) bool {
 //
 // Notably, it's not an irreversible upgrade, the database can still be opened with
 // legacy Geth binary.
+//
+// 命令行入口是 geth db pebble-upgrade。格式抬到 FormatFlushableIngest 之后，v2 才能打开。
 func Upgrade(file string) error {
 	exists, ver, err := PeekFormatVersion(file)
 	if err != nil {

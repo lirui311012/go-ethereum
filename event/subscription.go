@@ -38,6 +38,9 @@ import (
 // The Unsubscribe method cancels the sending of events. You must call Unsubscribe in all
 // cases to ensure that resources related to the subscription are released. It can be
 // called any number of times.
+//
+// Err 最多收到一个错误。正常结束或 Unsubscribe 时这个 channel 被关闭，读到的是零值。
+// 调用方必须 Unsubscribe，否则 producer 不会退出。
 type Subscription interface {
 	Err() <-chan error // returns the error channel
 	Unsubscribe()      // cancels sending of events, closing the error channel
@@ -46,6 +49,8 @@ type Subscription interface {
 // NewSubscription runs a producer function as a subscription in a new goroutine. The
 // channel given to the producer is closed when Unsubscribe is called. If fn returns an
 // error, it is sent on the subscription's error channel.
+//
+// producer 在自己的 goroutine 里跑。Unsubscribe 关掉传进去的 channel，并等到 producer 返回。
 func NewSubscription(producer func(<-chan struct{}) error) Subscription {
 	s := &funcSub{unsub: make(chan struct{}), err: make(chan error, 1)}
 	go func() {
@@ -94,6 +99,9 @@ func (s *funcSub) Err() <-chan error {
 //
 // Resubscribe applies backoff between calls to fn. The time between calls is adapted
 // based on the error rate, but will never exceed backoffMax.
+//
+// 内部订阅出错后按退避再建。RPC 的 websocket 订阅掉线重连用这个模式。
+// 主动 Unsubscribe，或内部订阅正常结束，循环才停。
 func Resubscribe(backoffMax time.Duration, fn ResubscribeFunc) Subscription {
 	return ResubscribeErr(backoffMax, func(ctx context.Context, _ error) (Subscription, error) {
 		return fn(ctx)
@@ -235,6 +243,9 @@ func (s *resubscribeSub) backoffWait() bool {
 // larger program.
 //
 // The zero value is ready to use.
+//
+// 服务停机时 Close 一次，全部 Unsubscribe。Track 在 Close 之后返回 nil。
+// keystore 用它盯住钱包事件的订阅者，人数归零就停掉刷新循环。
 type SubscriptionScope struct {
 	mu     sync.Mutex
 	subs   map[*scopeSub]struct{}

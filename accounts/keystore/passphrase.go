@@ -137,6 +137,9 @@ func (ks keyStorePassphrase) JoinPath(filename string) string {
 }
 
 // EncryptDataV3 encrypts the data given as 'data' with the password 'auth'.
+//
+// scrypt 推出 32 字节：前 16 字节做 AES-128-CTR，后 16 字节和密文一起做 keccak 当 MAC。
+// 口令错了会在 MAC 对不上时失败，不会解出一串乱私钥。
 func EncryptDataV3(data, auth []byte, scryptN, scryptP int) (CryptoJSON, error) {
 	salt := make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
@@ -197,6 +200,8 @@ func EncryptKey(key *Key, auth string, scryptN, scryptP int) ([]byte, error) {
 }
 
 // DecryptKey decrypts a key from a json blob, returning the private key itself.
+//
+// version 为字符串 "1" 走旧格式，其余走 v3。解出来的地址用公钥重算，不信 JSON 里写的 address。
 func DecryptKey(keyjson []byte, auth string) (*Key, error) {
 	// Parse the json into a simple map to fetch the key version
 	m := make(map[string]interface{})

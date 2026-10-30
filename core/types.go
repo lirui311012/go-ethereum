@@ -28,6 +28,8 @@ import (
 // Validator is an interface which defines the standard for block validation. It
 // is only responsible for validating block contents, as the header validation is
 // done by the specific consensus engines.
+//
+// 只核对 body 和执行结果。头的共识规则在 engine.VerifyHeaders。
 type Validator interface {
 	// ValidateBody validates the given block's content.
 	ValidateBody(block *types.Block) error
@@ -45,6 +47,8 @@ type Prefetcher interface {
 }
 
 // Processor is an interface for processing blocks using a given initial state.
+//
+// 实现是 StateProcessor.Process。这里不把块写成链头。
 type Processor interface {
 	// Process processes the state changes according to the Ethereum rules by running
 	// the transaction messages using the statedb and applying any rewards to both

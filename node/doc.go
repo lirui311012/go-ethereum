@@ -17,6 +17,9 @@
 /*
 Package node sets up multi-protocol Ethereum nodes.
 
+它不认识链。数据目录锁、账户管理器、p2p.Server 和几套 RPC 在这里。
+链作为 Lifecycle 挂上来。状态只能从初始化到运行，再到关闭。
+
 In the model exposed by this package, a node is a collection of services which use shared
 resources to provide RPC APIs. Services can also offer devp2p protocols, which are wired
 up to the devp2p network when the node instance is started.

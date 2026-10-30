@@ -20,6 +20,9 @@ package node
 // on the node. Lifecycle management is delegated to the node, but it is the
 // responsibility of the service-specific package to configure and register the
 // service on the node using the `RegisterLifecycle` method.
+//
+// Start 在网络层起来之后调用，用来起后台循环。Stop 要阻塞到这些循环结束。
+// 普通模式下 engine API 不是 Lifecycle。会注册成后台服务的是 --dev 的模拟信标和 --beacon.api 的 blsync。
 type Lifecycle interface {
 	// Start is called after all services have been constructed and the networking
 	// layer was also initialized to spawn any goroutines required by the service.

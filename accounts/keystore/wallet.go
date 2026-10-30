@@ -27,6 +27,9 @@ import (
 
 // keystoreWallet implements the accounts.Wallet interface for the original
 // keystore.
+//
+// 一个文件一个账户。Open、Close、SelfDerive 是空操作。Derive 返回 ErrNotSupported。
+// SignText 走带以太坊前缀的 TextHash。SignData 只对原始数据做 keccak。
 type keystoreWallet struct {
 	account  accounts.Account // Single account contained in this wallet
 	keystore *KeyStore        // Keystore where the account originates from

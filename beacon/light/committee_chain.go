@@ -60,6 +60,9 @@ var (
 //
 // Once synced to the current sync period, CommitteeChain can also validate
 // signed beacon headers.
+//
+// 只跟踪同步委员会和更新，不保存执行层状态。blsync 把它建在内存库上。
+// 全节点旁边有完整共识客户端时不走这里。
 type CommitteeChain struct {
 	// chainmu guards against concurrent access to the canonicalStore structures
 	// (updates, committees, fixedCommitteeRoots) and ensures that they stay consistent
@@ -486,6 +489,9 @@ func (s *CommitteeChain) getSyncCommittee(period uint64) (syncCommittee, error) 
 // The age of the header is also returned (the time elapsed since the beginning
 // of the given slot, according to the local system clock). If enforceTime is
 // true then negative age (future) headers are rejected.
+//
+// 用签名 slot 所在周期的委员会验 BLS。委员会还没同步到那个周期时验不过。
+// 返回的年龄按本机时钟和 slot 起点计算，enforceTime 为真时拒绝未来的头。
 func (s *CommitteeChain) VerifySignedHeader(head types.SignedHeader) (bool, time.Duration, error) {
 	s.chainmu.RLock()
 	defer s.chainmu.RUnlock()

@@ -118,6 +118,9 @@ const (
 const selfDeriveThrottling = time.Second
 
 // Wallet represents a smartcard wallet instance.
+//
+// PublicKey 只用于和卡建立安全通道，不是账户的签名公钥。
+// Open 负责配对和 PIN。SignTx 把交易哈希送进卡，由 session.sign 签。
 type Wallet struct {
 	Hub       *Hub   // A handle to the Hub that instantiated this wallet.
 	PublicKey []byte // The wallet's public key (used for communication and identification, not signing!)

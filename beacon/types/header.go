@@ -15,6 +15,9 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package types implements a few types of the beacon chain for light client usage.
+//
+// 这里是信标头和轻客户端更新，不是执行层的 types.Block。
+// 执行载荷从信标块里抽出来，再交给 engine.ExecutableData。
 package types
 
 import (
@@ -41,6 +44,8 @@ const (
 //
 // See data structure definition here:
 // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblockheader
+//
+// Slot 除以 EpochLength 得到 epoch。执行层区块哈希不在这五个字段里，要靠执行载荷证明。
 type Header struct {
 	// Monotonically increasing slot number for the beacon block (may be gapped)
 	Slot uint64 `gencodec:"required" json:"slot"`
@@ -119,6 +124,8 @@ func SyncPeriod(slot uint64) uint64 {
 // This structure is created from either an optimistic update or an instant update:
 //   - https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#lightclientoptimisticupdate
 //   - https://github.com/zsfelfoldi/beacon-APIs/blob/instant_update/apis/beacon/light_client/instant_update.yaml
+//
+// 签名所在 slot 可以比头的 slot 新，用它决定是哪一届同步委员会签的。
 type SignedHeader struct {
 	// Beacon header being signed
 	Header Header

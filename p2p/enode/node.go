@@ -35,6 +35,8 @@ import (
 var errMissingPrefix = errors.New("missing 'enr:' prefix for base64-encoded record")
 
 // Node represents a host on the network.
+//
+// 身份加端点。底层是一条已签名的 ENR。发现只交出这种节点。
 type Node struct {
 	r  enr.Record
 	id ID

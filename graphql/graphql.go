@@ -15,6 +15,8 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package graphql provides a GraphQL interface to Ethereum node data.
+//
+// 查询复用 ethapi.Backend，由 node 挂在 /graphql。JSON-RPC 方法表不经过这里。
 package graphql
 
 import (
@@ -1305,6 +1307,8 @@ func (p *Pending) EstimateGas(ctx context.Context, args struct {
 }
 
 // Resolver is the top-level object in the GraphQL hierarchy.
+//
+// 字段解析回到 Backend 的区块、状态和过滤器。
 type Resolver struct {
 	backend      ethapi.Backend
 	filterSystem *filters.FilterSystem

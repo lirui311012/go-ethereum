@@ -14,7 +14,9 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package mclock is a wrapper for a monotonic clock source
+// Package mclock is a wrapper for a monotonic clock source.
+//
+// P2P 和请求调度用它量间隔，不用 time.Now。System 是真实单调时钟，测试里换成 Simulated。
 package mclock
 
 import (
@@ -74,6 +76,8 @@ type ChanTimer interface {
 }
 
 // System implements Clock using the system clock.
+//
+// Now 来自 runtime.nanotime，不受系统时间回拨影响。
 type System struct{}
 
 // Now returns the current monotonic time.

@@ -70,6 +70,8 @@ var (
 )
 
 // NewType creates a new reflection type of abi type given in t.
+//
+// 单个静态值占一个 32 字节字。定长数组和静态 tuple 按 getTypeSize 占多字。bytes、string、切片和动态 tuple 在原地放偏移，内容追加在尾部。
 func NewType(t string, internalType string, components []ArgumentMarshaling) (typ Type, err error) {
 	// check that array brackets are equal if they exist
 	if strings.Count(t, "[") != strings.Count(t, "]") {

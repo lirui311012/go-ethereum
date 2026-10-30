@@ -18,6 +18,8 @@
 // +build !js,!wasip1
 
 // Package leveldb implements the key-value database layer based on LevelDB.
+//
+// 仍保留的 KV 实现。空库默认改走 pebble。
 package leveldb
 
 import (
@@ -59,6 +61,8 @@ const (
 // Database is a persistent key-value store. Apart from basic data storage
 // functionality it also supports batch writes and iterating over the keyspace in
 // binary-alphabetical order.
+//
+// 实现 ethdb.KeyValueStore。node/database.go 在目录已是 LevelDB 或用户指定该引擎时调用 New。
 type Database struct {
 	fn string      // filename for reporting
 	db *leveldb.DB // LevelDB instance

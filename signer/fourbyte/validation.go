@@ -28,6 +28,8 @@ import (
 // ValidateTransaction does a number of checks on the supplied transaction, and
 // returns either a list of warnings, or an error (indicating that the transaction
 // should be immediately rejected).
+//
+// data 和 input 不一致会直接拒绝。其余问题多半是警告。不执行交易。
 func (db *Database) ValidateTransaction(selector *string, tx *apitypes.SendTxArgs) (*apitypes.ValidationMessages, error) {
 	messages := new(apitypes.ValidationMessages)
 
@@ -94,6 +96,9 @@ func (db *Database) ValidateTransaction(selector *string, tx *apitypes.SendTxArg
 
 // ValidateCallData checks if the ABI call-data + method selector (if given) can
 // be parsed and seems to match.
+//
+// 用 4 字节表说明这段 calldata 对得上哪个签名，并检查参数长度是否按 32 字节对齐。
+// 对不上只是警告。
 func (db *Database) ValidateCallData(selector *string, data []byte, messages *apitypes.ValidationMessages) {
 	// If the data is empty, we have a plain value transfer, nothing more to do
 	if len(data) == 0 {

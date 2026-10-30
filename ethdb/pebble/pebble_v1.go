@@ -16,7 +16,8 @@
 
 // Legacy pebble v1 wrapper. This file mirrors pebble.go but with V1-prefixed
 // types so that it can coexist alongside a future v2 variant in the same package.
-
+//
+// 只为打开尚未升到 v2 最低格式的旧数据目录。
 package pebble
 
 import (
@@ -39,6 +40,8 @@ import (
 // V1Database is a persistent key-value store based on the pebble v1 storage engine.
 // Apart from basic data storage functionality it also supports batch writes and
 // iterating over the keyspace in binary-alphabetical order.
+//
+// node/database.go 在 NeedsV1 为真时调用 NewV1。新目录走 pebble.go 的 v2 Database。
 type V1Database struct {
 	fn        string     // filename for reporting
 	db        *pebble.DB // Underlying pebble storage engine

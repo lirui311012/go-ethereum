@@ -34,6 +34,8 @@ var errVmoduleSyntax = errors.New("expect comma-separated list of filename=N")
 // GlogHandler is a log handler that mimics the filtering features of Google's
 // glog logger: setting global log levels; overriding with callsite pattern
 // matches; and requesting backtraces at certain positions.
+//
+// --verbosity 定全局级别。Vmodule 按文件名再放行更细的日志，规则形如 filename=N。
 type GlogHandler struct {
 	origin slog.Handler // The origin handler this wraps
 	lock   sync.Mutex   // synchronizes writes to config

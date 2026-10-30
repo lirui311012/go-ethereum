@@ -57,6 +57,8 @@ type callback struct {
 	isSubscribe bool           // true if this is a subscription callback
 }
 
+// 导出方法经 formatName 把首字母改成小写。订阅和普通方法分开放。
+// 同一 namespace 可以多次注册，方法合并。debug 就是这样叠了多套 service。
 func (r *serviceRegistry) registerName(name string, rcvr interface{}) error {
 	rcvrVal := reflect.ValueOf(rcvr)
 	if name == "" {
@@ -96,6 +98,8 @@ func serviceAndMethod(name string) (service, method string, ok bool) {
 }
 
 // callback returns the callback corresponding to the given RPC method name.
+//
+// 用 "_" 切开 "eth_getBalance" 这类名字，再查对应 namespace 的方法表。
 func (r *serviceRegistry) callback(name string) (cb *callback) {
 	s, m, found := serviceAndMethod(name)
 	if !found {
@@ -244,6 +248,8 @@ func isPubSub(methodType reflect.Type) bool {
 }
 
 // formatName converts to first character of name to lowercase.
+//
+// GetBalance 变成 getBalance。对外的全名是 namespace 加下划线，例如 eth_getBalance。
 func formatName(name string) string {
 	ret := []rune(name)
 	if len(ret) > 0 {

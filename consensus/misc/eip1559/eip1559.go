@@ -30,6 +30,8 @@ import (
 // VerifyEIP1559Header verifies some header attributes which were changed in EIP-1559,
 // - gas limit check
 // - basefee check
+//
+// 核对 gas limit 涨跌幅和 base fee。不算交易。组块时 miner 用 CalcBaseFee 填同一套数。
 func VerifyEIP1559Header(config *params.ChainConfig, parent, header *types.Header) error {
 	// Verify that the gas limit remains within allowed bounds
 	parentGasLimit := parent.GasLimit
@@ -57,6 +59,9 @@ func VerifyEIP1559Header(config *params.ChainConfig, parent, header *types.Heade
 }
 
 // CalcBaseFee calculates the basefee of the header.
+//
+// 用父块 GasUsed 相对 GasLimit/ElasticityMultiplier 算下一头的 base fee。
+// 父块还不是 London 时返回 InitialBaseFee。
 func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 	// If the current block is the first EIP-1559 block, return the InitialBaseFee.
 	if !config.IsLondon(parent.Number) {

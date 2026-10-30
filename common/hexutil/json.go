@@ -37,6 +37,8 @@ var (
 
 // Bytes marshals/unmarshals as a JSON string with 0x prefix.
 // The empty slice marshals as "0x".
+//
+// Hash 和 Address 的 JSON 不走这个变长类型，而走 UnmarshalFixedJSON，长度必须刚好 32 或 20 字节。
 type Bytes []byte
 
 // MarshalText implements encoding.TextMarshaler
@@ -97,6 +99,8 @@ func (b *Bytes) UnmarshalGraphQL(input interface{}) error {
 // UnmarshalFixedJSON decodes the input as a string with 0x prefix. The length of out
 // determines the required input length. This function is commonly used to implement the
 // UnmarshalJSON method for fixed-size types.
+//
+// 多一位或少一位会失败。裁剪只发生在 Hash.SetBytes 和 Address.SetBytes，不发生在 JSON 解码。
 func UnmarshalFixedJSON(typ reflect.Type, input, out []byte) error {
 	if !isString(input) {
 		return errNonString(typ)
@@ -152,6 +156,8 @@ func UnmarshalFixedUnprefixedText(typname string, input, out []byte) error {
 // Negative integers are not supported at this time. Attempting to marshal them will
 // return an error. Values larger than 256bits are rejected by Unmarshal but will be
 // marshaled without error.
+//
+// RPC 里的大整数。零值是 "0x0"。不接受负数。解开时超过 256 位会拒绝。
 type Big big.Int
 
 // MarshalText implements encoding.TextMarshaler

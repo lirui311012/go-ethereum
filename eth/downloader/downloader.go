@@ -239,6 +239,7 @@ type BlockChain interface {
 }
 
 // New creates a new downloader to fetch hashes and blocks from remote peers.
+// snapV2 为真时用 snap/2 同步器，否则用 snap/1。入口是 BeaconSync，不在这里向对端要总难度最高的头。
 func New(stateDb ethdb.Database, mode ethconfig.SyncMode, chain BlockChain, dropPeer peerDropFn, success func(), snapV2 bool) *Downloader {
 	cutoffNumber, cutoffHash := chain.HistoryPruningCutoff()
 	dl := &Downloader{
@@ -456,6 +457,9 @@ func (d *Downloader) SubscribeSyncEvents(ch chan<- SyncEvent) event.Subscription
 
 // syncToHead starts a block synchronization based on the hash chain from
 // the specified head hash.
+//
+// Full 逐块 InsertChain。Snap 在 pivot 之前只写收据、不执行，状态靠 snapSyncer，
+// pivot 之后大约 64 块才执行。HistoryMode 只跳过切点之前的 body 和收据。
 func (d *Downloader) syncToHead(beaconPing chan struct{}) (err error) {
 	mode := d.getMode()
 	d.feed.Send(SyncEvent{Type: SyncStarted, Mode: mode})

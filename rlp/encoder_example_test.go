@@ -33,6 +33,21 @@ func (x *MyCoolType) EncodeRLP(w io.Writer) (err error) {
 	return rlp.Encode(w, []uint{x.a, x.b})
 }
 
+type MyCoolType2 MyCoolType
+
+// EncodeRLP writes x as RLP list [Name, a, b].
+func (x *MyCoolType2) EncodeRLP(w io.Writer) (err error) {
+	return rlp.Encode(w, []interface{}{x.Name, x.a, x.b})
+}
+
+type MyCoolType3 MyCoolType
+
+// EncodeRLP writes x as RLP list [Name, [a, b]].
+func (x *MyCoolType3) EncodeRLP(w io.Writer) (err error) {
+	return rlp.Encode(w, []interface{}{x.Name, []uint{x.a, x.b}})
+}
+
+// Done
 func ExampleEncoder() {
 	var t *MyCoolType // t is nil pointer to MyCoolType
 	bytes, _ := rlp.EncodeToBytes(t)
@@ -42,7 +57,17 @@ func ExampleEncoder() {
 	bytes, _ = rlp.EncodeToBytes(t)
 	fmt.Printf("%v → %X\n", t, bytes)
 
+	u := &MyCoolType2{Name: "foobar", a: 5, b: 6}
+	bytes, _ = rlp.EncodeToBytes(u)
+	fmt.Printf("%v → %X\n", u, bytes)
+
+	v := &MyCoolType3{Name: "foobar", a: 5, b: 6}
+	bytes, _ = rlp.EncodeToBytes(v)
+	fmt.Printf("%v → %X\n", v, bytes)
+
 	// Output:
 	// <nil> → C0
 	// &{foobar 5 6} → C20506
+	// &{foobar 5 6} → C986666F6F6261720506
+	// &{foobar 5 6} → CA86666F6F626172C20506
 }

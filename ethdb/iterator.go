@@ -25,6 +25,8 @@ package ethdb
 // An iterator must be released after use, but it is not necessary to read an
 // iterator until exhaustion. An iterator is not safe for concurrent use, but it
 // is safe to use multiple iterators concurrently.
+//
+// 用完调用 Release。Key 和 Value 返回的切片在下一次 Next 时可能被覆盖。
 type Iterator interface {
 	// Next moves the iterator to the next key/value pair. It returns whether the
 	// iterator is exhausted.
@@ -50,6 +52,8 @@ type Iterator interface {
 }
 
 // Iteratee wraps the NewIterator methods of a backing data store.
+//
+// prefix 与 start 分开传。调用方不用把 prefix 再拼到 start 前面。
 type Iteratee interface {
 	// NewIterator creates a binary-alphabetical iterator over a subset
 	// of database content with a particular key prefix, starting at a particular

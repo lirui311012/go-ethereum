@@ -35,6 +35,8 @@ func packBytesSlice(bytes []byte, l int) []byte {
 
 // packElement packs the given reflect value according to the abi specification in
 // t.
+//
+// 数字和地址左填充到 32 字节。定长 bytesN 靠左放置，右侧补零。动态类型的长度和内容由 Arguments.Pack 追加到尾部。
 func packElement(t Type, reflectValue reflect.Value) ([]byte, error) {
 	switch t.T {
 	case UintTy:

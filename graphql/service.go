@@ -133,6 +133,8 @@ func writeRequestError(w http.ResponseWriter, err error) {
 }
 
 // New constructs a new GraphQL service instance.
+//
+// cmd/utils.RegisterGraphQLService 在打开 --graphql 时调用。交互页在 /graphql/ui。
 func New(stack *node.Node, backend ethapi.Backend, filterSystem *filters.FilterSystem, cors, vhosts []string) error {
 	_, err := newHandler(stack, backend, filterSystem, cors, vhosts)
 	return err
@@ -140,6 +142,8 @@ func New(stack *node.Node, backend ethapi.Backend, filterSystem *filters.FilterS
 
 // newHandler returns a new `http.Handler` that will answer GraphQL queries.
 // It additionally exports an interactive query browser on the / endpoint.
+//
+// 同时注册 /graphql 和 /graphql/ui。查询深度受 maxQueryDepth 限制。
 func newHandler(stack *node.Node, backend ethapi.Backend, filterSystem *filters.FilterSystem, cors, vhosts []string) (*handler, error) {
 	q := Resolver{backend, filterSystem}
 

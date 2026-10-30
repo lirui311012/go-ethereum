@@ -30,6 +30,8 @@ import (
 // HeadTracker keeps track of the latest validated head and the "prefetch" head
 // which is the (not necessarily validated) head announced by the majority of
 // servers.
+//
+// 已验证的乐观头和最终头在这里。prefetch 头只是多数信标节点宣布的，还没验签名。
 type HeadTracker struct {
 	lock                sync.RWMutex
 	committeeChain      *CommitteeChain

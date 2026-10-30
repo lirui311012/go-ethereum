@@ -336,7 +336,9 @@ type ValidatorData struct {
 	Message hexutil.Bytes
 }
 
-// TypedData is a type to encapsulate EIP-712 typed messages
+// TypedData is a type to encapsulate EIP-712 typed messages.
+//
+// 四段：类型、主类型、域、消息。本结构算出待签名的 32 字节。签名在 crypto。
 type TypedData struct {
 	Types       Types            `json:"types"`
 	PrimaryType string           `json:"primaryType"`
@@ -387,6 +389,8 @@ type TypedDataDomain struct {
 // See https://eips.ethereum.org/EIPS/eip-712 for the full specification.
 //
 // This gives context to the signed typed data and prevents signing of transactions.
+//
+// 域哈希和主类型哈希拼上 "\x19\x01" 再 keccak。这就是要签的 32 字节。
 func TypedDataAndHash(typedData TypedData) ([]byte, string, error) {
 	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
 	if err != nil {
@@ -400,7 +404,9 @@ func TypedDataAndHash(typedData TypedData) ([]byte, string, error) {
 	return crypto.Keccak256([]byte(rawData)), rawData, nil
 }
 
-// HashStruct generates a keccak256 hash of the encoding of the provided data
+// HashStruct generates a keccak256 hash of the encoding of the provided data.
+//
+// EncodeData 之后再 keccak。真正要签的摘要是 TypedDataAndHash，前面还有域分隔符。
 func (typedData *TypedData) HashStruct(primaryType string, data TypedDataMessage) (hexutil.Bytes, error) {
 	encodedData, err := typedData.EncodeData(primaryType, data, 1)
 	if err != nil {

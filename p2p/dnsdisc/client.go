@@ -38,6 +38,8 @@ import (
 )
 
 // Client discovers nodes by querying DNS servers.
+//
+// EIP-1459：从 DNS TXT 树里取节点列表。和 DHT 一样只提供地址。
 type Client struct {
 	cfg          Config
 	clock        mclock.Clock

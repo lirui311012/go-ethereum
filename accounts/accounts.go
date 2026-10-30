@@ -15,6 +15,8 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package accounts implements high level Ethereum account management.
+//
+// 这一层只回答「谁来签名」。私钥算法在 crypto。RPC 调 Wallet.SignTx，不在这里发交易。
 package accounts
 
 import (
@@ -30,6 +32,9 @@ import (
 
 // Account represents an Ethereum account located at a specific location defined
 // by the optional URL field.
+//
+// 地址是账户本身。URL 只是后端里的定位：keystore 是文件路径，硬件钱包是派生路径。
+// 只给地址也能 Find。同一地址出现在两个后端时要靠 URL 区分。
 type Account struct {
 	Address common.Address `json:"address"` // Ethereum account address derived from the key
 	URL     URL            `json:"url"`     // Optional resource locator within a backend
@@ -44,6 +49,10 @@ const (
 
 // Wallet represents a software or hardware wallet that might contain one or more
 // accounts (derived from the same seed).
+//
+// keystore 里一个文件就是一个钱包，Open 是空操作，签名要先 Unlock 或带口令。
+// 硬件钱包的 Open 才是连上设备。Derive 只有 HD 钱包有，keystore 返回 ErrNotSupported。
+// SignTx 找不到已解密的钥就返回 AuthNeededError，调用方再改走 WithPassphrase。
 type Wallet interface {
 	// URL retrieves the canonical path under which this wallet is reachable. It is
 	// used by upper layers to define a sorting order over all wallets from multiple
@@ -155,6 +164,9 @@ type Wallet interface {
 
 // Backend is a "wallet provider" that may contain a batch of accounts they can
 // sign transactions with and upon request, do so.
+//
+// geth 启动时往 Manager 上挂的是 KeyStore、USB Hub、智能卡 Hub 或外部签名器。
+// Wallets 返回的钱包默认没打开。插拔和文件变化通过 Subscribe 的 WalletEvent 报上来。
 type Backend interface {
 	// Wallets retrieves the list of wallets the backend is currently aware of.
 	//
@@ -181,6 +193,10 @@ type Backend interface {
 //	keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
 //
 // This gives context to the signed message and prevents signing of transactions.
+//
+// personal_sign 用的就是这个前缀。keystore、USB 和智能卡的 SignText 会先做 TextHash 再签名。
+// 外部签名器把原文交给 account_signData，不在这里加前缀。
+// keystore 的 SignData 只对原文做 keccak。USB 遇到 EIP-712（0x1901 前缀）时不走这条 keccak，外部签名器则把原文原样送出去。
 func TextHash(data []byte) []byte {
 	hash, _ := TextAndHash(data)
 	return hash
@@ -222,6 +238,8 @@ const (
 
 // WalletEvent is an event fired by an account backend when a wallet arrival or
 // departure is detected.
+//
+// Manager.update 只改缓存里的 Arrived 和 Dropped。Opened 留给上层去开自动派生。
 type WalletEvent struct {
 	Wallet Wallet          // Wallet instance arrived or departed
 	Kind   WalletEventType // Event type that happened in the system

@@ -39,6 +39,8 @@ type ChainContext interface {
 }
 
 // NewEVMBlockContext creates a new context for use in the EVM.
+//
+// 把块头里的 coinbase、base fee、blob base fee 和时间交给 EVM。不算交易。
 func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common.Address) vm.BlockContext {
 	var (
 		beneficiary common.Address

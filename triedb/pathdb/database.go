@@ -142,6 +142,8 @@ type Database struct {
 // New attempts to load an already existing layer from a persistent key-value
 // store (with a number of memory layers from a journal). If the journal is not
 // matched with the base persistent layer, all the recorded diff layers are discarded.
+//
+// 从磁盘层和 journal 恢复。journal 对得上磁盘层就留下 diff，对不上就丢掉。isUBT 为真时库包进前缀 "v"。
 func New(diskdb ethdb.Database, config *Config, isUBT bool) *Database {
 	if config == nil {
 		config = Defaults
@@ -292,6 +294,8 @@ func (db *Database) setStateGenerator() error {
 // Therefore, these maps must not be changed afterwards.
 //
 // The supplied parentRoot and root must be a valid trie hash value.
+//
+// 新根必须接到已有父根。内存里默认最多留 128 层 diff，更老的层并进 disk layer 的 buffer。StateDB.Commit 之后调用这里。
 func (db *Database) Update(root common.Hash, parentRoot common.Hash, block uint64, nodes *trienode.MergedNodeSet, states *StateSetWithOrigin) error {
 	// Hold the lock to prevent concurrent mutations.
 	db.lock.Lock()

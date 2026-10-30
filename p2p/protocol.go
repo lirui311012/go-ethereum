@@ -26,6 +26,9 @@ import (
 )
 
 // Protocol represents a P2P subprotocol implementation.
+//
+// 新子协议实现这个结构，在 Ethereum.Protocols 里 append。
+// Run 自己读写消息。Server.run 只做准入。eth 和 snap 是同一条 TCP 上的两个协议。
 type Protocol struct {
 	// Name should contain the official protocol name,
 	// often a three-letter word.

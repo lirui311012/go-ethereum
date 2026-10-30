@@ -537,6 +537,8 @@ func (s *syncerV2) Unregister(id string) error {
 // Sync starts (or resumes a previous) sync cycle to iterate over a state trie
 // with the given pivot header and reconstruct the nodes based on the snapshot
 // leaves.
+//
+// 拉扁平账户、存储和字节码。pivot 移动时用区块访问列表的差量前滚，最后本地生成 trie。
 func (s *syncerV2) Sync(target *types.Header, cancel chan struct{}) error {
 	if target == nil {
 		return errors.New("snap sync: pivot header is nil")

@@ -28,7 +28,10 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-// API describes the set of methods offered over the RPC interface
+// API describes the set of methods offered over the RPC interface.
+//
+// Namespace 是对外前缀。Service 是带方法的接收者。
+// Public 和 Version 已不用。Authenticated 为真的 API 会进进程内、IPC 和 JWT 端口。公开 HTTP/WS 只用未认证的那一组。
 type API struct {
 	Namespace     string      // namespace under which the rpc methods of Service are exposed
 	Version       string      // deprecated - this field is no longer used, but retained for compatibility

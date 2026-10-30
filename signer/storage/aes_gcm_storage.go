@@ -36,6 +36,9 @@ type storedCredential struct {
 
 // AESEncryptedStorage is a storage type which is backed by a json-file. The json-file contains
 // key-value mappings, where the keys are _not_ encrypted, only the values are.
+//
+// 密钥由调用方提供，不写进文件。用来记用户批准过什么。
+// 账户私钥的格式在 accounts/keystore。
 type AESEncryptedStorage struct {
 	// File to read/write credentials
 	filename string

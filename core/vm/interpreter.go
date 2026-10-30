@@ -166,6 +166,9 @@ func (evm *EVM) Run(contract *Contract, input []byte, readOnly bool) (ret []byte
 	// explicit STOP, RETURN or SELFDESTRUCT is executed, an error occurred during
 	// the execution of one of the operations or until the done flag is set by the
 	// parent context.
+	//
+	// 唯一的执行节拍：取 opcode → jumpTable → 查栈深 → 扣 gas → 扩内存 → execute。
+	// 子调用 revert 时 opcode 仍返回 nil 错误，栈上推 0，循环继续。预编译不进这个循环。
 	_ = jumpTable[0] // nil-check the jumpTable out of the loop
 	for {
 		if debug {

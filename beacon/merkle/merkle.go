@@ -15,6 +15,8 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package merkle implements proof verifications in binary merkle trees.
+//
+// 轻客户端证明用的二叉树。VerifyProof 用 sha256，和执行层的 keccak Merkle Patricia trie 不是同一棵树。
 package merkle
 
 import (

@@ -20,6 +20,9 @@
 /*
 The ci command is called from Continuous Integration scripts.
 
+在仓库根目录执行。make all，以及提交前的 test、lint、check_generate、check_baddeps 都从这里进。
+产物在 build/bin。它不是节点进程的一部分。
+
 Usage: go run build/ci.go <command> <command flags/arguments>
 
 Available commands are:

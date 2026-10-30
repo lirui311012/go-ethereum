@@ -364,6 +364,8 @@ func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.In
 // the gas used (which includes gas refunds) and an error if it failed. An error always
 // indicates a core error meaning that the message would always fail for that particular
 // state and would never be accepted within a block.
+//
+// 返回的 error 是共识错误，块因此无效。EVM 里的 revert 记在 ExecutionResult.Err，交易仍留在块里。
 func ApplyMessage(evm *vm.EVM, msg *Message, gp *GasPool) (*ExecutionResult, error) {
 	// Do not panic if the gas pool is nil. This is allowed when executing
 	// a single message via RPC invocation.
@@ -674,6 +676,9 @@ func (st *stateTransition) preCheck(rules params.Rules) error {
 //
 // If a consensus error is encountered, it is returned directly with a
 // nil EVM execution result.
+//
+// preCheck 扣掉预付 gas。真正进 EVM 前，最外层用 ForwardAll 把剩余预算整段交给第一帧，不留 1/64。
+// 1/64 只出现在 CALL / CREATE 的子调用里。
 func (st *stateTransition) execute() (*ExecutionResult, error) {
 	var (
 		msg              = st.msg

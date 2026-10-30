@@ -27,6 +27,8 @@ import (
 func u64(val uint64) *uint64 { return &val }
 
 // Forks table defines supported forks and their chain config.
+//
+// 向量里的分叉名在这里变成 ChainConfig。新分叉要登记，状态测试才会覆盖它。
 var Forks = map[string]*params.ChainConfig{
 	"Frontier": {
 		ChainID: big.NewInt(1),

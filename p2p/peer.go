@@ -435,6 +435,8 @@ func countMatchingProtocols(protocols []Protocol, caps []Cap) int {
 }
 
 // matchProtocols creates structures for matching named subprotocols.
+//
+// 按名字和版本对齐。同一名字只留双方都有的最高匹配，并给每个协议一段消息号偏移。
 func matchProtocols(protocols []Protocol, caps []Cap, rw MsgReadWriter) map[string]*protoRW {
 	slices.SortFunc(caps, Cap.Cmp)
 	offset := baseProtocolLength
@@ -459,6 +461,7 @@ outer:
 	return result
 }
 
+// 每个匹配的子协议起一个 goroutine 调 Protocol.Run。eth 和 snap 各一条，共用这条连接。
 func (p *Peer) startProtocols(writeStart <-chan struct{}, writeErr chan<- error) {
 	p.wg.Add(len(p.running))
 	for _, proto := range p.running {

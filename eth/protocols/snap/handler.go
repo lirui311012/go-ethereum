@@ -82,6 +82,8 @@ type Backend interface {
 // MakeProtocols constructs the P2P protocol definitions for `snap`. When snapV2
 // is set, the snap/2 version is advertised in addition to the default versions;
 // otherwise only the default (snap/1) versions are offered on the wire.
+//
+// 不传区块。snap/1 按账户区间拉叶子再 heal trie。snap/2 要 SnapV2 打开才宣告。
 func MakeProtocols(backend Backend, snapV2 bool) []p2p.Protocol {
 	versions := ProtocolVersions
 	if !snapV2 {

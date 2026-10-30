@@ -1874,6 +1874,9 @@ func (bc *BlockChain) writeBlockAndSetHead(block *types.Block, receipts []*types
 // chain or, otherwise, create a fork. If an error is returned it will return
 // the index number of the failing block as well an error describing what went
 // wrong. After insertion is done, all accumulated events will be fired.
+//
+// Full 同步走这里。下面 insertChain 的 setHead 为 true，执行成功就写成规范头。
+// 共识层送来的新块不走这里，走 InsertBlockWithoutSetHead。
 func (bc *BlockChain) InsertChain(chain types.Blocks) (int, error) {
 	// Sanity check that we have something meaningful to import
 	if len(chain) == 0 {
@@ -1907,6 +1910,8 @@ func (bc *BlockChain) InsertChain(chain types.Blocks) (int, error) {
 
 // insertChain is the internal implementation of InsertChain, which assumes that
 // 1) chains are contiguous, and 2) The chain mutex is held.
+//
+// setHead 写进 ExecuteConfig.WriteHead。为 false 时这块会执行并落库，然后直接返回，不改规范头。
 //
 // This method is split out so that import batches that require re-injecting
 // historical blocks can do so without releasing the lock, which could lead to
@@ -2882,6 +2887,8 @@ func (bc *BlockChain) reorg(oldHead *types.Header, newHead *types.Header) error 
 // The key difference between the InsertChain is it won't do the canonical chain
 // updating. It relies on the additional SetCanonical call to finalize the entire
 // procedure.
+//
+// newPayload 的入口。setHead 传 false。VALID 只说明落库成功，链头要等随后的 SetCanonical。
 func (bc *BlockChain) InsertBlockWithoutSetHead(ctx context.Context, block *types.Block, makeWitness bool) (witness *stateless.Witness, err error) {
 	_, _, spanEnd := telemetry.StartSpan(ctx, "core.blockchain.InsertBlockWithoutSetHead")
 	defer spanEnd(&err)
@@ -2897,6 +2904,9 @@ func (bc *BlockChain) InsertBlockWithoutSetHead(ctx context.Context, block *type
 // SetCanonical rewinds the chain to set the new head block as the specified
 // block. It's possible that the state of the new head is missing, and it will
 // be recovered in this function as well.
+//
+// forkchoiceUpdated 在本地已经有这块时调用。头状态缺失就先重放祖先。
+// 父块不是当前头才 reorg，然后 writeHeadBlock，并通知交易池和过滤器。
 func (bc *BlockChain) SetCanonical(head *types.Block) (common.Hash, error) {
 	if !bc.chainmu.TryLock() {
 		return common.Hash{}, errChainStopped

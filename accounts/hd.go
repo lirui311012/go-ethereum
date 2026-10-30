@@ -57,6 +57,10 @@ var LegacyLedgerBaseDerivationPath = DerivationPath{0x80000000 + 44, 0x80000000 
 // from https://github.com/ethereum/EIPs/issues/84, albeit it's not set in stone
 // yet whether accounts should increment the last component or the children of
 // that. We will go with the simpler approach of incrementing the last component.
+//
+// 最高位 0x80000000 表示硬化。以太坊币种是 60'。
+// DefaultBaseDerivationPath 是 m/44'/60'/0'/0/0，自增最后一段。
+// Ledger Live 自增的是第三段 account'，见 LedgerLiveIterator。
 type DerivationPath []uint32
 
 // ParseDerivationPath converts a user specified derivation path string to the
