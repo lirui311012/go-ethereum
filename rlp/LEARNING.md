@@ -192,11 +192,11 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    call["Encode / Decode：借一块缓冲，调用闭包"]
+    entry["Encode / Decode：借一块缓冲，调用闭包"]
     cache["typecache：这个类型的闭包生成过吗"]
     make["makeWriter / makeDecoder：按 Kind 选函数"]
     bytes["encBuffer 写字节，Stream 读字节"]
-    call --> cache --> make --> bytes
+    entry --> cache --> make --> bytes
 ```
 
 上面三层只决定用哪个函数。真正拼出 `0x80`、`0xC0` 这些头的，是最下面那一层。
