@@ -9,7 +9,7 @@ RLP（Recursive Length Prefix）只编码嵌套的字节串和列表。整数的
 1. `rlp/doc.go`：类型如何映射成字符串或列表。
 2. 下面这几节：先看线上字节，再看本包怎么生成编解码函数。
 3. 下面的「数据结构怎么配合」：`encBuffer` 和 `Stream` 的字段在每一步之后是什么。
-4. `rlp/typecache.go`：每种类型的编解码闭包只生成一次。
+4. `rlp/typecache.go`：闭包按「Go 类型 + 字段 tag」生成一次。顶层 `Encode` / `Decode` 用的是空 tag。
 5. `rlp/encode.go` 的 `makeWriter`、`rlp/decode.go` 的 `makeDecoder`：同一张分派表，方向相反。不要从文件第一行通读。
 6. `rlp/rlpgen`：把这张表生成成源码。默认生成 `EncodeRLP`，加 `-decoder` 才生成 `DecodeRLP`。
 7. 对照 `core/types` 里的 `gen_header_rlp.go` 一类文件，看真实结构体怎么编码。
@@ -44,7 +44,7 @@ flowchart TD
 
 所以 `"cat"` 的内容是 `63 61 74`，`"dog"` 的内容是 `64 6f 67`。光有内容还不行，读的人不知道这一截到哪里结束，所以每段前面要加一个头，头里写着后面有几个字节。
 
-短字符串的头从 `0x80` 起算。空字符串一个字节都没有，头就是 `0x80`。有 1 个字节，头是 `0x81`。有 3 个字节，头是 `0x83`。公式是 `0x80 + 内容长度`。
+短字符串的头从 `0x80` 起算。空字符串一个字节都没有，头就是 `0x80`。内容是 2 到 55 字节时，头是 `0x80 + 内容长度`。单独一个小于 `0x80` 的字节不加头，这个字节自己就是编码。内容恰好 1 字节、并且这个字节 ≥ `0x80` 时，头才是 `0x81`。
 
 `"cat"` 和 `"dog"` 都是 3 个字节，头都是 `0x80 + 3 = 0x83`：
 
@@ -82,7 +82,7 @@ c8            83        63 61 74      83        64 6f 67
 
 ## 第一个字节决定后面是什么
 
-每个值都以一个类型字节开头。读解码时，`Stream.Kind` 只看这一个字节，就能知道后面是单字节、短字符串、长字符串、短列表还是长列表。分界和 `rlp/decode.go` 里的 `readKind` 一致。
+每个值都以一个类型字节开头。这一个字节决定后面是单字节、短字符串、长字符串、短列表还是长列表。短形式的长度也在这一个字节里。长形式还要再读长度字段，`Stream.Kind` 把类型字节和长度一起读完再缓存。分界和 `rlp/decode.go` 里的 `readKind` 一致。
 
 ```mermaid
 flowchart TD
@@ -151,7 +151,7 @@ c4           01            82         68 69
 Version 和 "hi":  c4 01 82 68 69
 ```
 
-Header 上的 `BaseFee`、`WithdrawalsHash`、`BlobGasUsed` 就是用这个办法，让不同分叉共用一个 Go 类型。
+`Header` 从 `BaseFee` 起的字段都带 `rlp:"optional"`：`BaseFee`、`WithdrawalsHash`、`BlobGasUsed`、`ExcessBlobGas`、`ParentBeaconRoot`、`RequestsHash`、`BlockAccessListHash`、`SlotNumber`。不同分叉因此共用一个 Go 类型。
 
 ## Go 类型对应哪一种 RLP
 
@@ -180,11 +180,11 @@ flowchart TD
 |-----|------|
 | `rlp:"-"` | 忽略该字段 |
 | `rlp:"tail"` | 最后一个字段。把列表尾部多出来的元素收进这个切片，不再为它包一层列表 |
-| `rlp:"optional"` | 零值可以省略。它后面的字段必须是 optional，或最后一个 `tail`。同一个字段不能同时带这两个 tag |
+| `rlp:"optional"` | 末尾连续的零值可以省略。它后面的字段必须是 optional，或最后一个 `tail`。同一个字段不能同时带这两个 tag |
 | `rlp:"nil"` | 只用于指针。空字符串或空列表解成 nil，空值种类按元素类型选 |
 | `rlp:"nilString"` / `rlp:"nilList"` | 同样允许 nil，但强制空值必须是字符串或列表 |
 
-没有 `nil` 一类 tag 时，出现在输入里的空字符串或空列表会解成已分配的值，不会变成 nil。optional 字段若整段缺席，指针留成 nil，这不算错误。
+没有 `nil` 一类 tag 时，空字符串或空列表不会把指针解成 nil。能解下去的空值会得到已分配的值：`*uint` 指向 0，`*[]byte` 指向空切片。结构体还有必填字段时，空列表 `0xC0` 报元素太少。optional 字段若整段缺席，指针留成 nil，这不算错误。
 
 ## 代码长，是因为同一条规则写了三遍
 
@@ -193,7 +193,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     entry["Encode / Decode：借一块缓冲，调用闭包"]
-    cache["typecache：这个类型的闭包生成过吗"]
+    cache["typecache：这个类型和 tag 的闭包生成过吗"]
     make["makeWriter / makeDecoder：按 Kind 选函数"]
     bytes["encBuffer 写字节，Stream 读字节"]
     entry --> cache --> make --> bytes
@@ -208,11 +208,12 @@ flowchart TD
 | 分派表 | `encode.go` 的 `makeWriter` | `decode.go` 的 `makeDecoder` |
 | 整数、布尔、字符串 | `writeUint`、`writeBool`、`writeString` | `decodeUint`、`decodeBool`、`decodeString` |
 | 结构体 | `makeStructWriter` | `makeStructDecoder` |
-| 切片、数组 | `makeSliceWriter` | `makeListDecoder` |
+| `[]byte`、`[N]byte` | `writeBytes`、`makeByteArrayWriter` | `makeListDecoder` 再进 `decodeByteSlice`、`decodeByteArray` |
+| 其它切片、数组 | `makeSliceWriter` | `makeListDecoder` |
 | 指针 | `makePtrWriter` | `makePtrDecoder` |
 | 碰字节 | `encbuffer.go` | `Stream`，头的判断在 `readKind` |
 
-`makeWriter` 的 `switch` 就是这张表的编码列。`writeUint`、`writeBool` 这些函数都只是表里的一行，看过 `switch` 就知道它们什么时候被选中，不必逐个往下追。
+`makeWriter` 的 `switch` 就是这张表的编码列。`writeUint`、`writeBool` 这些函数都只是表里的一行，看过 `switch` 就知道它们什么时候被选中，不必逐个往下追。`[]byte` 和 `[N]byte` 排在普通切片前面。元素若是实现了 `Encoder` 的 `uint8`，`isByte` 为假，才落到 `makeSliceWriter`，按列表逐个编码。
 
 `decode.go` 从 `NewStream` 往后是另一件事：一个在字节流上走动的游标。`Kind` 看当前这项的头，`List` 进入一层列表，`ListEnd` 确认这一层读完。类型规则在文件前半的 `makeDecoder`，和 `makeWriter` 对齐着看。
 
@@ -227,11 +228,11 @@ flowchart TD
 
 `Encode` 开头的 `encBufferFromWriter` 也不是新规则。自定义 `EncodeRLP` 里常常再调用 `rlp.Encode(w, x)`，这时 `w` 已经是正在用的那块缓冲。认出来就接着往同一块里写。认不出来才新开一块，编完再拷到外面的 `io.Writer`。
 
-可以先不读 `raw.go` 和 `iterator.go`。它们在已经编好的字节上切分、计数，不参与把 Go 值编成字节。
+可以先不读 `raw.go` 和 `iterator.go`。它们主要在已经编好的字节上切分、计数。`AppendUint64` 和 `MergeListValues` 也会写出编码，但不走反射，不负责把任意 Go 值编成字节。
 
 ## 这个包里编码怎么走
 
-`Encode` 拿一个 `encBuffer`，向类型缓存要这个类型的 `writer` 闭包，然后调用它。闭包在 `rlp/typecache.go` 里生成一次，之后同一种类型不再反射。
+`Encode` 拿一个 `encBuffer`，向类型缓存要 `writer` 闭包，然后调用它。缓存键是 Go 类型加上字段的 rlp tag。同一种类型、同一组 tag 在 `rlp/typecache.go` 里生成一次，之后不再反射。顶层调用的 tag 是空的。`nil`、`nilString`、`nilList`、`tail` 会改这条类型的规则，`optional` 也写进键里，所以都分开缓存。
 
 结构体的列表头不能先写。子项还没编码，载荷有多长还不知道。`encBuffer` 把字符串内容和列表头分开存：`list` 只记下头将来要插在哪个位置，字段写进 `str`，`listEnd` 再算出载荷长度。真正往 `io.Writer` 输出时，才把头插回对应的载荷前面。
 
@@ -244,7 +245,7 @@ sequenceDiagram
 
     调用方->>Encode: Encode(w, val)
     Encode->>缓存: cachedWriter(类型)
-    Note over 缓存: 第一次生成 writer，之后直接复用
+    Note over 缓存: 键是类型加 tag。同一组只生成一次
     Encode->>缓冲: writer(val)
     Note over 缓冲: 结构体先 list 占坑，字段写完再 listEnd
     缓冲-->>调用方: 把头插回载荷前面，写出字节
@@ -319,7 +320,7 @@ type listhead struct {
 | `str` | 字符串和字符串头。列表头不在这里 |
 | `lheads` | 每个列表头。`offset` 是它将来插进 `str` 的下标 |
 | `lhsize` | 已经 `listEnd` 的列表头，编码后一共占多少字节 |
-| `sizebuf` | 9 字节草稿。大整数和长头先写到这里，再追加进 `str`。一个头最长是 1 字节类型加 8 字节长度 |
+| `sizebuf` | 9 字节草稿。`writeUint64` 和长头先写到这里，再追加进 `str`。超过 64 位的 `big.Int` 另分配一块，`uint256.Int` 用自己的 33 字节数组。一个头最长是 1 字节类型加 8 字节长度 |
 
 `list` 不写头。它往 `lheads` 追加一项：`offset` 等于当时的 `len(str)`，`size` 先暂存当时的 `lhsize`。返回值是这项的下标，`listEnd` 用它找回这一项。
 
@@ -353,7 +354,7 @@ str[0:1]  → 04
 str[1:]   → 05 06
 ```
 
-得到 `C404C20506`。`writeTo` 的顺序相同，只是分成多次 `Write`。`EncodeToReader` 也不先拼整块，`encReader` 按同样的顺序每次交出一小段；列表头编进 `sizebuf`，调用方必须先拷走。读到结尾时这块 `encBuffer` 放回 `encBufferPool`。
+得到 `C404C20506`。`writeTo` 的顺序相同，只是分成多次 `Write`。`EncodeToReader` 也不先拼整块。`encReader.Read` 按同样的顺序每次交出一小段，拷进调用方的缓冲区。列表头写在 `sizebuf` 里；`next` 返回的是这块草稿的切片，下一次 `next` 会覆盖它，所以 `Read` 在再次调用 `next` 之前先把字节拷走。读到结尾时这块 `encBuffer` 放回 `encBufferPool`。
 
 `EncoderBuffer` 是给调用方和生成代码用的一层，生成文件里的 `NewEncoderBuffer(_w)` 就是它。
 
