@@ -25,6 +25,7 @@ func New() *Trie {
 func (t *Trie) Insert(word string) {
 	n := &t.root
 	for _, r := range word {
+		// Go 里对 nil map 取值得到该类型的零值，这里就是 nil，不会 panic
 		child := n.children[r]
 		if child == nil {
 			if n.children == nil {

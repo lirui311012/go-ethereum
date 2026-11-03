@@ -99,6 +99,108 @@ for _, r := range "你好" {
 
 `Delete` 在返回途中剪掉空分支：一个节点不再是词尾，也没有孩子，就从父节点上摘掉。删掉唯一的 `cat` 之后，`StartsWith("c")` 是 false。`app` 还在时删掉 `apple`，`app` 那条词尾留着，`apple` 多出去的边被剪掉。
 
+## 增删改查
+
+下面四张图都从同一棵树出发：已经放进 `app` 和 `apple`。调用方只和 `Trie` 说话，后面的箭头是 `trie.go` 里沿码点往下走的顺序。改一个词由 `Delete` 和 `Insert` 两步完成。
+
+### 增
+
+`Insert("apt")`。`a → p` 已经在，从 `t` 开始才新建节点。
+
+```mermaid
+sequenceDiagram
+    participant 调用方
+    participant Trie
+    participant p as 第一个 p
+    participant t
+
+    调用方->>Trie: Insert("apt")
+    Trie->>p: 沿 a、p 走到已有节点
+    Trie->>p: children['t'] 为空
+    Trie->>t: 新建 t
+    Trie->>t: 词尾尚未标记，标上词尾
+    Trie->>Trie: count++
+    Trie-->>调用方: 返回
+```
+
+同一个词再 `Insert` 一次时，会走到已经标了词尾的节点，然后直接返回，`count` 不变。
+
+### 查
+
+`Search` 要走到末尾，并且那个节点标了词尾。`StartsWith` 只要求这条路径走得通。
+
+```mermaid
+sequenceDiagram
+    participant 调用方
+    participant Trie
+    participant walk
+
+    调用方->>Trie: Search("app")
+    Trie->>walk: 从根沿 a → p → p
+    walk-->>Trie: 末尾节点，词尾已标记
+    Trie-->>调用方: true
+
+    调用方->>Trie: Search("ap")
+    Trie->>walk: 从根沿 a → p
+    walk-->>Trie: 末尾节点，词尾未标记
+    Trie-->>调用方: false
+
+    调用方->>Trie: StartsWith("ap")
+    Trie->>walk: 从根沿 a → p
+    walk-->>Trie: 节点存在
+    Trie-->>调用方: true
+```
+
+某个码点没有边时，`walk` 返回 nil，`Search` 和 `StartsWith` 都返回 false。空前缀不往下走，停在根上，`StartsWith("")` 返回 true。
+
+### 删
+
+`Delete("apple")`。先递归到 `e` 清掉词尾，返回时把不再通向任何词的 `e`、`l` 摘掉。`app` 的词尾留在第二个 `p` 上。
+
+```mermaid
+sequenceDiagram
+    participant 调用方
+    participant Trie
+    participant p as 第二个 p
+    participant l
+    participant e
+
+    调用方->>Trie: Delete("apple")
+    Trie->>e: 沿 a → p → p → l → e 递归向下
+    e-->>Trie: 词尾为 true，清掉词尾
+    Trie->>l: e 没有词尾也没有孩子，摘掉 e
+    Trie->>p: l 没有词尾也没有孩子，摘掉 l
+    Note over p: 这里仍是 app 的词尾，留下
+    Trie->>Trie: count--
+    Trie-->>调用方: true
+```
+
+走到一半没有这条边，或者走到末尾但词尾未标记，`Delete` 返回 false，`count` 不变。
+
+### 改
+
+把 `apple` 换成 `apply`：先删掉 `apple`，再插入 `apply`。前缀 `a → p → p` 继续共用。
+
+```mermaid
+sequenceDiagram
+    participant 调用方
+    participant Trie
+    participant p as 第二个 p
+    participant y
+
+    调用方->>Trie: Delete("apple")
+    Note over Trie: 清掉 e 的词尾，返回时摘掉 e 和 l
+    Note over p: app 的词尾留在这里
+    Trie-->>调用方: true，count 减 1
+
+    调用方->>Trie: Insert("apply")
+    Trie->>p: 沿 a → p → p 复用已有节点
+    Trie->>p: 新建 l，再新建 y
+    Trie->>y: 标上词尾
+    Trie->>Trie: count 加 1
+    Trie-->>调用方: 返回
+```
+
 ## 用法
 
 ```go
