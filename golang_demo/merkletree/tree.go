@@ -5,6 +5,13 @@
 //	叶子：SHA-256(0x00 || data)
 //	内部：SHA-256(0x01 || left || right)
 //
+// 以 a、b 为例，真实父节点是 SHA-256(0x01 || H(a) || H(b))。
+// H(a) 和 H(b) 各 32 字节，拼起来是 64 字节。
+// 如果两种节点用同一种哈希，把这 64 字节当作一片新叶子再哈希，结果正好等于父节点。
+// 攻击者再拿父节点上面通往根的兄弟节点，就能让验证者相信这 64 字节是树上的叶子。
+// 这里叶子固定从 0x00 起算，同一段 64 字节得到 SHA-256(0x00 || H(a) || H(b))，和父节点对不上。
+// Verify 只按叶子规则从原始数据起算，再沿证明往上拼接。
+//
 // 某一层节点数是奇数时，末尾那个节点与自己配对，再进入上一层。
 // 只剩一个节点时它就是根，不再和自己配对。
 package merkletree
@@ -35,6 +42,8 @@ func LeafHash(data []byte) Hash {
 
 // Tree 保存从叶子到根的每一层。layers[0] 是叶子，最后一层只有根。
 type Tree struct {
+	// 外层 `layers` 是一个动态切片，它的每个元素是 `[]Hash` 类型
+	// 内层每个 `[]Hash` 里的元素，是 `[32]byte` 的单个哈希值
 	layers [][]Hash
 }
 
@@ -48,6 +57,9 @@ func Build(chunks [][]byte) (*Tree, error) {
 	for i, chunk := range chunks {
 		leaves[i] = LeafHash(chunk)
 	}
+	// layers[0] 是叶子层。循环看的是最后一层：节点数大于 1 就两两配对，新的一层追加到末尾。
+	// 三片叶子会变成 [3 个叶子, 2 个父节点, 1 个根]。只剩 1 个时停，这一层就是根。
+	// 只有一片叶子时循环不进，根就是这片叶子的哈希。
 	layers := [][]Hash{leaves}
 	for len(layers[len(layers)-1]) > 1 {
 		layers = append(layers, pair(layers[len(layers)-1]))
