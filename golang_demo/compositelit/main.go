@@ -4,7 +4,9 @@
 //
 //	a := Account{Address: Address{19: 1}, Balance: 5, Nonce: 1}
 //
-// 外层按字段名填 Account，内层按数组下标填 Address。每一节对应 README 里的同名步骤。
+// 外层 Account 按字段名填。冒号左边的 Address 是字段名；右边的 Address
+// 是类型 [20]byte，{19: 1} 按数组下标写，不是再填一个结构体。
+// 每一节对应 README 里的同名步骤。
 // 在本目录执行 go run . 看输出。
 package main
 
