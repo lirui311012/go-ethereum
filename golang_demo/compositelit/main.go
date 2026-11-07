@@ -114,7 +114,7 @@ func sliceIndex() {
 	fmt.Printf("[]int{1, 4: 5, 6}  = %v  len=%d cap=%d\n", mixed, len(mixed), cap(mixed))
 
 	arr := [4]int{1: 7, 3: 8}
-	fmt.Printf("[4]int{1: 7, 3: 8} = %v  len=%d\n", arr, len(arr))
+	fmt.Printf("[4]int{1: 7, 3: 8} = %v  len=%d cap=%d\n", arr, len(arr), cap(arr))
 }
 
 func mapLiteral() {
