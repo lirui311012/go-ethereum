@@ -100,6 +100,7 @@ func thisProcess() {
 	fmt.Printf("len = %d\n", len(os.Args))
 	fmt.Printf("程序名 = %s\n", strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe"))
 	fmt.Printf("参数 = %#v\n", os.Args[1:])
+	fmt.Printf("参数 = %#v\n", os.Args)
 }
 
 func catch(fn func()) (msg string) {
